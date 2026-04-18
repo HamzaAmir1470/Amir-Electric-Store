@@ -54,7 +54,9 @@ const Login = () => {
                 email: "",
                 password: ""
             });
-
+            const { token } = data || {};
+            localStorage.setItem("token", token);
+            
             // SUCCESS
             if (response.ok) {
                 handleSuccess(data?.message || "Login successful!");

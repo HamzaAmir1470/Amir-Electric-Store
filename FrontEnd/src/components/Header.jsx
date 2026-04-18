@@ -1,11 +1,20 @@
 import React from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 
 const Header = () => {
+    const navigate = useNavigate();
+
+    const isLoggedIn = !!localStorage.getItem("token");
+
     const navStyle = ({ isActive }) =>
         isActive
             ? "text-blue-400 border-b-2 border-blue-400 pb-1"
             : "text-white hover:text-blue-400 transition";
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        navigate("/");
+    };
 
     return (
         <header className="bg-gradient-to-r from-black via-gray-900 to-blue-900 text-white shadow-lg sticky top-0 z-50">
@@ -13,45 +22,47 @@ const Header = () => {
 
                 {/* Logo */}
                 <div className="text-2xl font-extrabold tracking-wide cursor-pointer flex items-center gap-2">
-                    ⚡ <span className="text-blue-400">АЄ$</span>
+                    <Link to="/">
+                        ⚡ <span className="text-blue-400">АЄ$</span>
+                    </Link>
                 </div>
 
                 {/* Navigation */}
                 <nav className="hidden md:flex space-x-8 text-lg font-medium">
-
-                    <NavLink to="/" className={navStyle}>
-                        Home
-                    </NavLink>
-
-                    <NavLink to="/products" className={navStyle}>
-                        Products
-                    </NavLink>
-
-                    <NavLink to="/about" className={navStyle}>
-                        About
-                    </NavLink>
-
-                    <NavLink to="/contact" className={navStyle}>
-                        Contact
-                    </NavLink>
-
+                    <NavLink to="/" className={navStyle}>Home</NavLink>
+                    <NavLink to="/products" className={navStyle}>Products</NavLink>
+                    <NavLink to="/about" className={navStyle}>About</NavLink>
+                    <NavLink to="/contact" className={navStyle}>Contact</NavLink>
                 </nav>
 
-                {/* Buttons */}
+                {/* Auth Buttons */}
                 <div className="flex items-center space-x-4">
 
-                    <Link
-                        to="/login"
-                        className="hidden md:block px-4 py-2 rounded-lg border border-blue-400 text-blue-400 hover:bg-blue-500 hover:text-white transition"
-                    >
-                        Login
-                    </Link>
+                    {isLoggedIn ? (
+                        <button
+                            onClick={handleLogout}
+                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition shadow-lg"
+                        >
+                            Logout
+                        </button>
+                    ) : (
+                        <>
+                            <Link
+                                to="/login"
+                                className="hidden md:block px-4 py-2 rounded-lg border border-blue-400 text-blue-400 hover:bg-blue-500 hover:text-white transition"
+                            >
+                                Login
+                            </Link>
 
-                    <button className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-lg">
-                        <Link to="/signup">
-                            Get Started
-                        </Link>
-                    </button>
+                            <Link
+                                to="/signup"
+                                className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-lg"
+                            >
+                                Get Started
+                            </Link>
+                        </>
+                    )}
+
                 </div>
             </div>
         </header>
