@@ -8,7 +8,7 @@ const Home = () => {
 
             {/* Hero Section */}
             <section className="bg-gradient-to-r from-black via-gray-900 to-blue-900 text-white py-20">
-                <div className="max-w-7xl mx-auto px-6 text-center">
+                <div className="max-w-7xl mx-auto h-108 px-6 text-center py-15">
                     <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
                         Amir Electric <span className="text-blue-400">Store</span>
                     </h1>
@@ -68,7 +68,7 @@ const Home = () => {
             </section>
 
             {/* Owner Section */}
-            <section className="py-20 bg-white">
+            <section className=" pt-0 py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
 
                     {/* Image */}

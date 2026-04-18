@@ -13,10 +13,10 @@ const signup = async (req, res) => {
         const newUser = new User({ name, email, password });
         newUser.password = await bcrypt.hash(password, 10);
         await newUser.save();
-        res.status(201).json({ message: 'User registered successfully', success: true });
+        res.status(201).json({ message: 'User registered successfully. Please Login.', success: true });
     }
     catch (error) {
-        res.status(500).json({ message: 'Error registering user', error });
+        res.status(500).json({ message: 'Error registering user', error: error.message });
     }
 };
 
@@ -40,7 +40,7 @@ const login = async (req, res) => {
         res.status(200).json({ message: 'User logged in successfully', success: true, token: jwtToken, email: user.email, name: user.name });
     }
     catch (error) {
-        res.status(500).json({ message: 'Error logging in user', error });
+        res.status(500).json({ message: 'Error logging in user', error: error.message });
     }
 };
 
