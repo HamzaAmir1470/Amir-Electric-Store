@@ -5,6 +5,7 @@ const Header = () => {
     const navigate = useNavigate();
 
     const isLoggedIn = !!localStorage.getItem("token");
+    const role = localStorage.getItem("role"); // 👈 get role
 
     const navStyle = ({ isActive }) =>
         isActive
@@ -38,6 +39,16 @@ const Header = () => {
 
                 {/* Auth Buttons */}
                 <div className="flex items-center space-x-4">
+
+                    {/*  Admin Button */}
+                    {role === "admin" && (
+                        <Link
+                            to="/admin/dashboard"
+                            className="px-4 py-2 rounded-lg bg-purple-500 text-white font-semibold hover:bg-purple-600 transition shadow-lg"
+                        >
+                            Admin Panel
+                        </Link>
+                    )}
 
                     {isLoggedIn ? (
                         <button
