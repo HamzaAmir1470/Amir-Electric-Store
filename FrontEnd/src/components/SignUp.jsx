@@ -10,7 +10,7 @@ const SignUp = () => {
                 {/* Title */}
                 <h2 className="text-3xl font-bold text-center mb-2">
                     <Link to="/">
-                    ⚡ Amir Electric Store
+                    ⚡ ̷A̷̷m̷̷i̷̷r̷ ̷E̷̷l̷̷e̷̷c̷̷t̷̷r̷̷i̷̷c̷ ̷S̷̷t̷̷o̷̷r̷̷e̷
                     </Link>
                 </h2>
                 <p className="text-center text-gray-500 mb-6">

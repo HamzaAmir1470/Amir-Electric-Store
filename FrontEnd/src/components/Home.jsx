@@ -72,12 +72,16 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
 
                     {/* Image */}
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center justify-center">
                         <img
                             src={owner}
                             alt="Owner"
                             className="w-72 h-72 object-cover rounded-2xl shadow-xl border-4 border-blue-500"
                         />
+
+                        <h2 className="text-2xl font-bold mt-4 text-gray-900">
+                            ɦαɱƶα αɱเ૨
+                        </h2>
                     </div>
 
                     {/* Content */}
@@ -98,9 +102,14 @@ const Home = () => {
                             with our customers. Your needs are our priority.
                         </p>
 
-                        <button className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-lg">
+                        <a
+                            href="https://wa.me/923054124410"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-lg"
+                        >
                             Contact Owner
-                        </button>
+                        </a>
                     </div>
 
                 </div>
@@ -115,7 +124,9 @@ const Home = () => {
                     Visit Amir Electric Store today and get the best deals on quality products.
                 </p>
                 <button className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-lg">
-                    Contact Us
+                    <Link to="/contact">
+                        Contact Us
+                    </Link>
                 </button>
             </section>
 

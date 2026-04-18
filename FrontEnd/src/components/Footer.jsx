@@ -9,7 +9,7 @@ const Footer = () => {
                 {/* Brand */}
                 <div>
                     <h2 className="text-2xl font-bold text-white mb-4">
-                        ⚡ <span className="text-blue-400">AES</span>
+                        ⚡ <span className="text-blue-400">АЄ$</span>
                     </h2>
                     <p className="text-sm leading-relaxed">
                         Providing high-quality electrical products and reliable services

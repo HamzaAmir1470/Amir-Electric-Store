@@ -13,7 +13,7 @@ const Header = () => {
 
                 {/* Logo */}
                 <div className="text-2xl font-extrabold tracking-wide cursor-pointer flex items-center gap-2">
-                    ⚡ <span className="text-blue-400">AES</span>
+                    ⚡ <span className="text-blue-400">АЄ$</span>
                 </div>
 
                 {/* Navigation */}
@@ -48,7 +48,9 @@ const Header = () => {
                     </Link>
 
                     <button className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-lg">
-                        Get Started
+                        <Link to="/signup">
+                            Get Started
+                        </Link>
                     </button>
                 </div>
             </div>
