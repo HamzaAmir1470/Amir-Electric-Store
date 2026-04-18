@@ -6,6 +6,7 @@ import SignUpPage from './components/Pages/SignupPage.jsx'
 import About from './components/About.jsx'
 import Product from './components/Product.jsx'
 import Contact from './components/Contact.jsx'
+import AdminSignUpPage from './components/Pages/AdminSignUpPage.jsx'
 import 'react-toastify/ReactToastify.css'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/products" element={<Product />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin/signup" element={<AdminSignUpPage />} />
           <Route path="/signup" element={<SignUpPage />} />
         </Routes>
      </Router>
