@@ -15,11 +15,22 @@ const AdminHeader = () => {
 
         {/* Logo */}
         <div className="text-xl font-bold tracking-wide text-blue-400">
-          <Link to="/">⚡ АЄ$ Admin Dashboard</Link>
+          <Link to="/admin/dashboard">⚡ АЄ$ Admin</Link>
         </div>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex flex-wrap gap-3 items-center text-sm md:text-base">
+
+          {/* 🏠 Home */}
+          <NavLink to="/" className={linkStyle}>
+            🏠 Home
+          </NavLink>
+
+          {/* 📊 Admin Dashboard */}
+          <NavLink to="/admin/dashboard" className={linkStyle}>
+            📊 Dashboard
+          </NavLink>
+
           <NavLink to="/admin/add-product" className={linkStyle}>
             ➕ Add Product
           </NavLink>
@@ -37,7 +48,7 @@ const AdminHeader = () => {
           </NavLink>
         </nav>
 
-        {/* Right Info (Desktop only) */}
+        {/* Right Info */}
         <div className="text-sm text-gray-400 hidden md:block">
           Admin Control Panel
         </div>
@@ -54,6 +65,15 @@ const AdminHeader = () => {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-black/90">
+
+          <NavLink to="/" className={linkStyle} onClick={() => setIsOpen(false)}>
+            🏠 Home
+          </NavLink>
+
+          <NavLink to="/admin/dashboard" className={linkStyle} onClick={() => setIsOpen(false)}>
+            📊 Dashboard
+          </NavLink>
+
           <NavLink to="/admin/add-product" className={linkStyle} onClick={() => setIsOpen(false)}>
             ➕ Add Product
           </NavLink>
