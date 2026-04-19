@@ -83,11 +83,84 @@ const bulkUpdateValidation = (req, res, next) => {
 
     next();
 };
+
+
+// Create Khata Validation
+const createKhataValidation = (req, res, next) => {
+    const schema = Joi.object({
+        customerName: Joi.string().min(3).max(50).required(),
+        phoneNumber: Joi.string()
+            .pattern(/^[0-9]{10,15}$/)
+            .allow("", null),
+        openingBalance: Joi.number().required(),
+        remainingBalance: Joi.number().allow(null).required(),
+        transactions: Joi.array().items(
+            Joi.object({
+                type: Joi.string().valid("payment", "purchase").required(),
+                amount: Joi.number().positive().required(),
+                date: Joi.date().required(),
+                note: Joi.string().max(200).allow(null)
+            }).optional()
+        )
+    });
+
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({
+            message: error.details[0].message
+        });
+    }
+
+    next();
+};
+
+
+//  Update Khata Validation
+const updateKhataValidation = (req, res, next) => {
+    const schema = Joi.object({
+        customerName: Joi.string().min(3).max(50),
+        phoneNumber: Joi.string().pattern(/^[0-9]{10,15}$/).allow("", null),
+        openingBalance: Joi.number(),
+        remainingBalance: Joi.number().allow(null)
+    });
+
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({
+            message: error.details[0].message
+        });
+    }
+
+    next();
+};
+
+
+//  ID Validation (optional but professional)
+const idValidation = (req, res, next) => {
+    const schema = Joi.object({
+        id: Joi.string().hex().length(24).required()
+    });
+
+    const { error } = schema.validate(req.params);
+
+    if (error) {
+        return res.status(400).json({
+            message: "Invalid ID format"
+        });
+    }
+
+    next();
+};
+
 module.exports = {
     signupValidation,
     loginValidation,
     productValidation,
     updateProductValidation,
-    bulkUpdateValidation
-
+    bulkUpdateValidation,
+    createKhataValidation,
+    updateKhataValidation,
+    idValidation
 };
