@@ -154,6 +154,56 @@ const idValidation = (req, res, next) => {
     next();
 };
 
+
+//  Invoice Validation
+const invoiceValidation = (req, res, next) => {
+    const schema = Joi.object({
+        invoiceNumber: Joi.string().required(),
+        date: Joi.date().optional(),
+
+        customer: Joi.object({
+            name: Joi.string().required(),
+            phone: Joi.string().allow(""),
+            email: Joi.string().email().allow(""),
+            address: Joi.string().allow("")
+        }).required(),
+
+        items: Joi.array()
+            .items(
+                Joi.object({
+                    product: Joi.string().required(),
+                    price: Joi.number().required(),
+                    qty: Joi.number().required(),
+                    total: Joi.number().required(),
+                    pricingType: Joi.string().valid("retail", "wholesale")
+                })
+            )
+            .min(1)
+            .required(),
+
+        pricingType: Joi.string().valid("retail", "wholesale"),
+
+        subtotal: Joi.number().required(),
+        discount: Joi.number().min(0).max(100),
+        discountAmount: Joi.number(),
+        tax: Joi.number().min(0).max(100),
+        taxAmount: Joi.number(),
+        grandTotal: Joi.number().required(),
+        notes: Joi.string().allow("")
+    });
+
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({
+            message: error.details[0].message
+        });
+    }
+
+    next();
+};
+
+
 module.exports = {
     signupValidation,
     loginValidation,
@@ -162,5 +212,6 @@ module.exports = {
     bulkUpdateValidation,
     createKhataValidation,
     updateKhataValidation,
-    idValidation
+    idValidation,
+    invoiceValidation
 };

@@ -5,6 +5,7 @@ const cors = require('cors');
 const AuthRouter = require('./Routes/AuthRouter');
 const ProductRouter = require('./Routes/ProductRouter');
 const KhataRouter = require('./Routes/khataRouter');
+const InvoiceRouter = require('./Routes/InvoiceRouter');
 
 require('dotenv').config();
 require('./Modals/db');
@@ -20,6 +21,7 @@ app.use(cors());
 app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/khata', KhataRouter);
+app.use('/invoices', InvoiceRouter);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
