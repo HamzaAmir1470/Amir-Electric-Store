@@ -70,7 +70,7 @@ const Login = () => {
             // Redirect
             setTimeout(() => {
                 if (userRole === "admin") {
-                    window.location.href = "/admin";
+                    window.location.href = "/admin/dashboard";
                 } else {
                     window.location.href = "/";
                 }
