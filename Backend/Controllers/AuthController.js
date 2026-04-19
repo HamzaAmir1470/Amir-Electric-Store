@@ -101,7 +101,27 @@ const login = async (req, res) => {
     }
 };
 
+
+// Logout Controller
+const logout = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+
+        return res.status(200).json({
+            message: "Logged out successfully"
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Server error during logout",
+            error: error.message
+        });
+    }
+};
+
+
 module.exports = {
     signup,
-    login
+    login,
+    logout
 };

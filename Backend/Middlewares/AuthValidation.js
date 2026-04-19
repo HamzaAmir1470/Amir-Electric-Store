@@ -203,6 +203,23 @@ const invoiceValidation = (req, res, next) => {
     next();
 };
 
+const logoutValidation = (req, res, next) => {
+    const schema = Joi.object({
+        token: Joi.string().optional()
+    });
+
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({
+            message: error.details[0].message
+        });
+    }
+
+    next();
+};
+
+module.exports = logoutValidation;
 
 module.exports = {
     signupValidation,
@@ -213,5 +230,6 @@ module.exports = {
     createKhataValidation,
     updateKhataValidation,
     idValidation,
-    invoiceValidation
+    invoiceValidation,
+    logoutValidation
 };
