@@ -13,6 +13,8 @@ import AdminStockPage from './components/Pages/AdminStockPage.jsx'
 import AdminKhataPage from './components/Pages/AdminKhataPage.jsx'
 import AdminInvoicePage from './components/Pages/AdminInvoicePage.jsx'
 import 'react-toastify/ReactToastify.css'
+import AdminRoute from "./ProtectedRoutes/AdminProtectedRoute.jsx"
+import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute.jsx"
 
 function App() {
 
@@ -22,19 +24,56 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/products" element={<Product />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={
+            <ProtectedRoute>
+              <About />
+            </ProtectedRoute>
+          } />
+          <Route path="/products" element={
+            <ProtectedRoute>
+              <Product />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:id" element={
+            <ProtectedRoute>
+              <Product />
+            </ProtectedRoute>
+          } />
+          <Route path="/contact" element={
+            <ProtectedRoute>
+              <Contact />
+            </ProtectedRoute>
+          } />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin/signup" element={<AdminSignUpPage />} />
           <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/admin/add-product" element={<AdminAddProductPage />} />
-          <Route path="/admin/stock" element={<AdminStockPage />} />
-          <Route path="/admin/khata" element={<AdminKhataPage />} />
-          <Route path="/admin/invoice" element={<AdminInvoicePage />} />
+          <Route path="/admin/dashboard" element={
+            <AdminRoute>
+              <AdminDashboardPage />
+            </AdminRoute>
+          } />
+          <Route path="/admin/add-product" element={
+            <AdminRoute>
+              <AdminAddProductPage />
+            </AdminRoute>
+          } />
+          <Route path="/admin/stock" element={
+            <AdminRoute>
+              <AdminStockPage />
+            </AdminRoute>
+          } />
+          <Route path="/admin/khata" element={
+            <AdminRoute>
+              <AdminKhataPage />
+            </AdminRoute>
+          } />
+          <Route path="/admin/invoice" element={
+            <AdminRoute>
+              <AdminInvoicePage />
+            </AdminRoute>
+          } />
         </Routes>
-     </Router>
+      </Router>
     </>
   )
 }
