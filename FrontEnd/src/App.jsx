@@ -15,6 +15,7 @@ import AdminInvoicePage from './components/Pages/AdminInvoicePage.jsx'
 import 'react-toastify/ReactToastify.css'
 import AdminRoute from "./ProtectedRoutes/AdminProtectedRoute.jsx"
 import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute.jsx"
+import UserProfilePage from './components/Pages/UserProfilePage.jsx'
 
 function App() {
 
@@ -32,6 +33,11 @@ function App() {
           <Route path="/products" element={
             <ProtectedRoute>
               <Product />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <UserProfilePage />
             </ProtectedRoute>
           } />
           <Route path="/product/:id" element={

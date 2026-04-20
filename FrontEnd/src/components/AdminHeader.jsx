@@ -46,17 +46,17 @@ const AdminHeader = () => {
         {/* Desktop Nav */}
         <nav className="hidden md:flex flex-wrap gap-3 items-center text-sm md:text-base">
 
-          <NavLink to="/" className={linkStyle}>🏠 Home</NavLink>
+          <NavLink to="/" className={linkStyle}> Home</NavLink>
 
-          <NavLink to="/admin/dashboard" className={linkStyle}>📊 Dashboard</NavLink>
+          <NavLink to="/admin/dashboard" className={linkStyle}> Dashboard</NavLink>
 
-          <NavLink to="/admin/add-product" className={linkStyle}>➕ Add Product</NavLink>
+          <NavLink to="/admin/add-product" className={linkStyle}> Add Product</NavLink>
 
-          <NavLink to="/admin/stock" className={linkStyle}>📦 Stock</NavLink>
+          <NavLink to="/admin/stock" className={linkStyle}> Stock</NavLink>
 
-          <NavLink to="/admin/khata" className={linkStyle}>📒 Khata</NavLink>
+          <NavLink to="/admin/khata" className={linkStyle}>Khata</NavLink>
 
-          <NavLink to="/admin/invoice" className={linkStyle}>🧾 Invoice</NavLink>
+          <NavLink to="/admin/invoice" className={linkStyle}> Invoice</NavLink>
         </nav>
 
         {/* Right Side - Profile */}

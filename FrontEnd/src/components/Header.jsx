@@ -5,7 +5,7 @@ const Header = () => {
     const navigate = useNavigate();
 
     const isLoggedIn = !!localStorage.getItem("token");
-    const role = localStorage.getItem("role"); // 👈 get role
+    const role = localStorage.getItem("role"); // get role
 
     const navStyle = ({ isActive }) =>
         isActive
@@ -40,7 +40,7 @@ const Header = () => {
                 {/* Auth Buttons */}
                 <div className="flex items-center space-x-4">
 
-                    {/*  Admin Button */}
+                    {/* Admin Button */}
                     {role === "admin" && (
                         <Link
                             to="/admin/dashboard"
@@ -50,7 +50,30 @@ const Header = () => {
                         </Link>
                     )}
 
-                    {isLoggedIn ? (
+                    {isLoggedIn && role !== "admin" ? (
+                        <div className="flex items-center gap-3">
+
+                            {/* Profile Section */}
+                            <Link to="/profile">                            <div className="flex items-center gap-2 bg-gray-800 px-3 py-1 rounded-lg shadow-md">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold">
+                                    {localStorage.getItem("name")?.charAt(0).toUpperCase() || "U"}
+                                </div>
+
+                                <span className="hidden md:block text-sm font-medium">
+                                    {localStorage.getItem("name") || "User"}
+                                </span>
+                            </div>
+                            </Link>
+
+                            {/* Logout */}
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition shadow-lg"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    ) : isLoggedIn && role === "admin" ? (
                         <button
                             onClick={handleLogout}
                             className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition shadow-lg"
@@ -74,7 +97,6 @@ const Header = () => {
                             </Link>
                         </>
                     )}
-
                 </div>
             </div>
         </header>

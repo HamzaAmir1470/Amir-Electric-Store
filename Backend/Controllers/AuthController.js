@@ -75,7 +75,7 @@ const login = async (req, res) => {
             {
                 _id: user._id,
                 email: user.email,
-                role: user.role   
+                role: user.role
             },
             process.env.JWT_SECRET,
             { expiresIn: "24h" }
@@ -101,6 +101,43 @@ const login = async (req, res) => {
     }
 };
 
+// get user profile
+const getProfile = async (req, res) => {
+    try {
+        const userId = req.user?._id;
+        console.log("Fetching profile for user ID:", userId); // helpful for debugging
+        if (!userId) {
+            return res.status(401).json({
+                message: "Unauthorized - No user found",
+                success: false
+            });
+        }
+        console.log("Decoded user:", req.user);
+        const user = await User.findById(userId).select("-password");
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Profile fetched successfully",
+            success: true,
+            user
+        });
+
+    } catch (error) {
+        console.error("Get Profile Error:", error); // ✅ helpful for debugging
+
+        return res.status(500).json({
+            message: "Error fetching profile",
+            success: false,
+            error: error.message
+        });
+    }
+};
 
 // Logout Controller
 const logout = async (req, res) => {
@@ -123,5 +160,6 @@ const logout = async (req, res) => {
 module.exports = {
     signup,
     login,
-    logout
+    logout,
+    getProfile
 };
