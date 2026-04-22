@@ -22,6 +22,7 @@ app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/khata', KhataRouter);
 app.use('/invoices', InvoiceRouter);
+app.use('/settings', require('./Routes/SettingRouter'));
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

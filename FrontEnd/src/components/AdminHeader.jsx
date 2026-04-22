@@ -80,6 +80,13 @@ const AdminHeader = () => {
               >
                 Profile
               </Link>
+              <Link
+                to="/admin/setting"
+                className="block px-4 py-2 hover:bg-gray-100"
+                onClick={() => setProfileOpen(false)}
+              >
+                Settings
+              </Link>
 
               <button
                 className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
@@ -121,6 +128,8 @@ const AdminHeader = () => {
             <div className="text-gray-400 text-sm mb-2">Admin</div>
 
             <Link to="/profile" className="block py-1"> Profile</Link>
+            <Link to="/admin/setting" className="block py-1"> Settings</Link>
+
             <button className="block py-1 text-red-400" onClick={handleLogout}> Logout</button>
           </div>
 

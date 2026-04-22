@@ -17,6 +17,7 @@ import AdminRoute from "./ProtectedRoutes/AdminProtectedRoute.jsx"
 import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute.jsx"
 import UserProfilePage from './components/Pages/UserProfilePage.jsx'
 import PublicRoute from "./ProtectedRoutes/PublicRoute.jsx"
+import AdminSettingpage from './components/Pages/AdminSettingpage.jsx'
 
 function App() {
 
@@ -84,6 +85,11 @@ function App() {
           <Route path="/admin/khata" element={
             <AdminRoute>
               <AdminKhataPage />
+            </AdminRoute>
+          } />
+          <Route path="/admin/setting" element={
+            <AdminRoute>
+              <AdminSettingpage />
             </AdminRoute>
           } />
           <Route path="/admin/invoice" element={
