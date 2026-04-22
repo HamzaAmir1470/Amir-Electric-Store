@@ -17,24 +17,26 @@ const {
     updateKhataValidation,
     idValidation
 } = require("../Middlewares/AuthValidation");
-
+const ensureAuthenticated = require("../Middlewares/Auth");
 
 //  Create
 router.post(
     "/",
+    ensureAuthenticated,
     createKhataValidation,
     createKhata
 );
 
 //  Get All
-router.get("/", getAllKhatas);
+router.get("/", ensureAuthenticated, getAllKhatas);
 
 //  Get Single
-router.get("/:id", idValidation, getKhataById);
+router.get("/:id", ensureAuthenticated, idValidation, getKhataById);
 
 //  Update
 router.put(
     "/:id",
+    ensureAuthenticated,
     idValidation,
     updateKhataValidation,
     updateKhata
@@ -43,12 +45,13 @@ router.put(
 //  Delete
 router.delete(
     "/:id",
+    ensureAuthenticated,
     idValidation,
     deleteKhata
 );
 
-router.get("/:id/transactions", idValidation, getTransactionsByKhata);
+router.get("/:id/transactions", ensureAuthenticated, idValidation, getTransactionsByKhata);
 
-router.put("/:id/transaction", addTransaction);
+router.put("/:id/transaction", ensureAuthenticated, idValidation, addTransaction);
 
 module.exports = router;

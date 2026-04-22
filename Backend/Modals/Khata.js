@@ -3,6 +3,13 @@ const Schema = mongoose.Schema;
 
 const khataSchema = new Schema(
     {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+            index: true   // 🔥 important for performance
+        },
+
         customerName: {
             type: String,
             required: true,

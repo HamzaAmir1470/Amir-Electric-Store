@@ -50,18 +50,29 @@ const Khata = () => {
 
     const API = "http://localhost:8080";
 
+    const getAuthHeader = () => {
+        const token = localStorage.getItem("token");
+        return {
+            Authorization: `Bearer ${token}`
+        };
+    };
+
     const fetchKhatas = async () => {
         try {
             setLoading(true);
-            // Fetch all khatas with their transactions
-            const res = await fetch(`${API}/khata`);
+            // Backend will filter by userId from token
+            const res = await fetch(`${API}/khata`, {
+                headers: getAuthHeader()
+            });
             const data = await res.json();
 
-            // Fetch transactions for each khata if needed
+            // Fetch transactions for each khata
             const khataWithTransactions = await Promise.all(
                 (data.data || []).map(async (khata) => {
                     try {
-                        const transactionsRes = await fetch(`${API}/khata/${khata._id}/transactions`);
+                        const transactionsRes = await fetch(`${API}/khata/${khata._id}/transactions`, {
+                            headers: getAuthHeader()
+                        });
                         if (transactionsRes.ok) {
                             const transactionsData = await transactionsRes.json();
                             return {
@@ -106,6 +117,7 @@ const Khata = () => {
         }
 
         try {
+            // Don't send userId - backend will get it from token
             const newKhata = {
                 customerName: form.customerName,
                 phoneNumber: form.phoneNumber,
@@ -116,7 +128,8 @@ const Khata = () => {
             const res = await fetch(`${API}/khata`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    ...getAuthHeader()
                 },
                 body: JSON.stringify(newKhata)
             });
@@ -145,7 +158,8 @@ const Khata = () => {
             const res = await fetch(`${API}/khata/${selectedCustomer._id}`, {
                 method: "PUT",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    ...getAuthHeader()
                 },
                 body: JSON.stringify({
                     customerName: editForm.customerName,
@@ -176,7 +190,8 @@ const Khata = () => {
     const handleDeleteCustomer = async () => {
         try {
             const res = await fetch(`${API}/khata/${selectedCustomer._id}`, {
-                method: "DELETE"
+                method: "DELETE",
+                headers: getAuthHeader()
             });
 
             const data = await res.json();
@@ -223,7 +238,8 @@ const Khata = () => {
                 {
                     method: "PUT",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        ...getAuthHeader()
                     },
                     body: JSON.stringify(payload)
                 }
@@ -259,6 +275,7 @@ const Khata = () => {
             handleError(error.message || "Server error");
         }
     };
+
     const openEditModal = (customer) => {
         setSelectedCustomer(customer);
         setEditForm({
@@ -280,7 +297,9 @@ const Khata = () => {
         setSelectedCustomer(customer);
         // Fetch latest transactions for this customer
         try {
-            const transactionsRes = await fetch(`${API}/transactions/khata/${customer._id}`);
+            const transactionsRes = await fetch(`${API}/khata/${customer._id}/transactions`, {
+                headers: getAuthHeader()
+            });
             if (transactionsRes.ok) {
                 const transactionsData = await transactionsRes.json();
                 const updatedCustomer = { ...customer, transactions: transactionsData.data || [] };
@@ -723,6 +742,7 @@ const Khata = () => {
                 </motion.div>
             </div>
 
+            {/* Modals remain the same as before */}
             {/* Transaction History Modal */}
             <AnimatePresence>
                 {showHistoryModal && selectedCustomer && (
@@ -738,6 +758,7 @@ const Khata = () => {
                             exit={{ scale: 0.9, opacity: 0 }}
                             className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto"
                         >
+                            {/* Modal content remains the same */}
                             <div className="flex justify-between items-center mb-4">
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
