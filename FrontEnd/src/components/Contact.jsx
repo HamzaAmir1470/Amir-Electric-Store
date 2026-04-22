@@ -136,7 +136,7 @@ const Contact = () => {
                             exit={{ opacity: 0, y: -50, scale: 0.9 }}
                             className="fixed top-20 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2"
                         >
-                            ✅ Message sent successfully! We'll contact you soon.
+                             Message sent successfully! We'll contact you soon.
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -177,22 +177,18 @@ const Contact = () => {
 
                         <div className="space-y-4 text-gray-700">
                             <p className="flex items-start gap-3">
-                                <span className="text-blue-500 text-xl">📍</span>
                                 <span><strong>Address:</strong> House no 404 A/1 street, 05 ghazi road, near general hospital, Lahore, 05450 Pakistan</span>
                             </p>
 
                             <p className="flex items-start gap-3">
-                                <span className="text-blue-500 text-xl">📞</span>
                                 <span><strong>Phone:</strong> +92 322 4385445</span>
                             </p>
 
                             <p className="flex items-start gap-3">
-                                <span className="text-blue-500 text-xl">✉️</span>
                                 <span><strong>Email:</strong> mh041829@gmail.com</span>
                             </p>
 
                             <p className="flex items-start gap-3">
-                                <span className="text-blue-500 text-xl">🕒</span>
                                 <span><strong>Hours:</strong> Mon - Sat (9:00 AM - 8:00 PM)</span>
                             </p>
                         </div>

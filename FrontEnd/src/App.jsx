@@ -28,9 +28,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={
-            <ProtectedRoute>
               <About />
-            </ProtectedRoute>
           } />
           <Route path="/products" element={
             <ProtectedRoute>
@@ -48,9 +46,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/contact" element={
-            <ProtectedRoute>
               <Contact />
-            </ProtectedRoute>
           } />
           <Route path="/login" element={
             <PublicRoute>
