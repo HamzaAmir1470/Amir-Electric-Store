@@ -46,7 +46,9 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/contact" element={
+            // <ProtectedRoute>
               <Contact />
+            // </ProtectedRoute>
           } />
           <Route path="/login" element={
             <PublicRoute>

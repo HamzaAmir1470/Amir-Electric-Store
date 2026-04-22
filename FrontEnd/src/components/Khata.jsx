@@ -117,7 +117,6 @@ const Khata = () => {
         }
 
         try {
-            // Don't send userId - backend will get it from token
             const newKhata = {
                 customerName: form.customerName,
                 phoneNumber: form.phoneNumber,

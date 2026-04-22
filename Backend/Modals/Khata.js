@@ -7,7 +7,7 @@ const khataSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
-            index: true   // 🔥 important for performance
+            index: true
         },
 
         customerName: {
@@ -18,7 +18,7 @@ const khataSchema = new Schema(
 
         phoneNumber: {
             type: String,
-            unique: true,
+            required: true,
             trim: true
         },
 
@@ -43,5 +43,7 @@ const khataSchema = new Schema(
         timestamps: true
     }
 );
+
+khataSchema.index({ userId: 1, phoneNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("Khata", khataSchema);

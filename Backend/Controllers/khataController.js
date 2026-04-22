@@ -2,7 +2,6 @@ const Khata = require("../Modals/Khata");
 const Transaction = require("../Modals/Transaction");
 
 
-// ➤ CREATE KHATA (ISOLATED)
 const createKhata = async (req, res) => {
     try {
         const { customerName, phoneNumber, openingBalance, remainingBalance, transactions } = req.body;
@@ -13,19 +12,8 @@ const createKhata = async (req, res) => {
             });
         }
 
-        const existingKhata = await Khata.findOne({
-            phoneNumber,
-            userId: req.user._id   // 🔥 isolation check
-        });
-
-        if (existingKhata) {
-            return res.status(409).json({
-                message: "Khata already exists for this phone number"
-            });
-        }
-
         const khata = await Khata.create({
-            userId: req.user._id,   // 🔥 IMPORTANT FIX
+            userId: req.user._id,
             customerName,
             phoneNumber,
             openingBalance,
@@ -39,13 +27,19 @@ const createKhata = async (req, res) => {
         });
 
     } catch (error) {
+        // Handle duplicate error properly
+        if (error.code === 11000) {
+            return res.status(409).json({
+                message: "Khata already exists for this phone number"
+            });
+        }
+
         return res.status(500).json({
             message: "Server error",
             error: error.message
         });
     }
 };
-
 
 // ➤ GET ALL KHATAS (ISOLATED)
 const getAllKhatas = async (req, res) => {

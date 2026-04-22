@@ -71,7 +71,7 @@ const AdminSignUp = () => {
             });
 
             setTimeout(() => {
-                window.location.href = "/admin/login";
+                window.location.href = "/login";
             }, 1000);
 
         } catch (error) {
