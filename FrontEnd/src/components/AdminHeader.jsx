@@ -17,7 +17,7 @@ const AdminHeader = () => {
           "Content-Type": "application/json"
         }
       });
-      
+
       localStorage.clear();
 
       navigate("/");
@@ -78,22 +78,14 @@ const AdminHeader = () => {
                 className="block px-4 py-2 hover:bg-gray-100"
                 onClick={() => setProfileOpen(false)}
               >
-                👤 Profile
-              </Link>
-
-              <Link
-                to="/settings"
-                className="block px-4 py-2 hover:bg-gray-100"
-                onClick={() => setProfileOpen(false)}
-              >
-                ⚙️ Settings
+                Profile
               </Link>
 
               <button
                 className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
                 onClick={handleLogout}
               >
-                🚪 Logout
+                Logout
               </button>
             </div>
           )}
@@ -112,25 +104,24 @@ const AdminHeader = () => {
       {isOpen && (
         <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-black/90">
 
-          <NavLink to="/" className={linkStyle} onClick={() => setIsOpen(false)}>🏠 Home</NavLink>
+          <NavLink to="/" className={linkStyle} onClick={() => setIsOpen(false)}>Home</NavLink>
 
-          <NavLink to="/admin/dashboard" className={linkStyle} onClick={() => setIsOpen(false)}>📊 Dashboard</NavLink>
+          <NavLink to="/admin/dashboard" className={linkStyle} onClick={() => setIsOpen(false)}>Dashboard</NavLink>
 
-          <NavLink to="/admin/add-product" className={linkStyle} onClick={() => setIsOpen(false)}>➕ Add Product</NavLink>
+          <NavLink to="/admin/add-product" className={linkStyle} onClick={() => setIsOpen(false)}>Add Product</NavLink>
 
-          <NavLink to="/admin/stock" className={linkStyle} onClick={() => setIsOpen(false)}>📦 Stock</NavLink>
+          <NavLink to="/admin/stock" className={linkStyle} onClick={() => setIsOpen(false)}> Stock</NavLink>
 
-          <NavLink to="/admin/khata" className={linkStyle} onClick={() => setIsOpen(false)}>📒 Khata</NavLink>
+          <NavLink to="/admin/khata" className={linkStyle} onClick={() => setIsOpen(false)}> Khata</NavLink>
 
-          <NavLink to="/admin/invoice" className={linkStyle} onClick={() => setIsOpen(false)}>🧾 Invoice</NavLink>
+          <NavLink to="/admin/invoice" className={linkStyle} onClick={() => setIsOpen(false)}>Invoice</NavLink>
 
           {/* Mobile Profile */}
           <div className="border-t border-gray-700 pt-3 mt-2">
-            <div className="text-gray-400 text-sm mb-2">👤 Admin</div>
+            <div className="text-gray-400 text-sm mb-2">Admin</div>
 
-            <Link to="/profile" className="block py-1">👤 Profile</Link>
-            <Link to="/settings" className="block py-1">⚙️ Settings</Link>
-            <button className="block py-1 text-red-400" onClick={handleLogout}>🚪 Logout</button>
+            <Link to="/profile" className="block py-1"> Profile</Link>
+            <button className="block py-1 text-red-400" onClick={handleLogout}> Logout</button>
           </div>
 
         </div>

@@ -16,6 +16,7 @@ import 'react-toastify/ReactToastify.css'
 import AdminRoute from "./ProtectedRoutes/AdminProtectedRoute.jsx"
 import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute.jsx"
 import UserProfilePage from './components/Pages/UserProfilePage.jsx'
+import PublicRoute from "./ProtectedRoutes/PublicRoute.jsx"
 
 function App() {
 
@@ -50,9 +51,21 @@ function App() {
               <Contact />
             </ProtectedRoute>
           } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/admin/signup" element={<AdminSignUpPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/login" element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } />
+          <Route path="/admin/signup" element={
+            <PublicRoute>
+              <AdminSignUpPage />
+            </PublicRoute>
+          } />
+          <Route path="/signup" element={
+            <PublicRoute>
+              <SignUpPage />
+            </PublicRoute>
+          } />
           <Route path="/admin/dashboard" element={
             <AdminRoute>
               <AdminDashboardPage />

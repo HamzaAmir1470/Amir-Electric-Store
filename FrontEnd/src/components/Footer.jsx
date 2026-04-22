@@ -32,9 +32,9 @@ const Footer = () => {
                 <div>
                     <h3 className="text-white font-semibold mb-4">Contact</h3>
                     <ul className="space-y-2 text-sm">
-                        <li>📍 Lahore, Pakistan</li>
-                        <li>📞 +92 305 4124410</li>
-                        <li>✉️ mh041829@gmail.com</li>
+                        <li> Lahore, Pakistan</li>
+                        <li> +92 305 4124410</li>
+                        <li> mh041829@gmail.com</li>
                     </ul>
                 </div>
 
@@ -46,7 +46,7 @@ const Footer = () => {
                         <input
                             type="email"
                             placeholder="Enter email"
-                            className="w-full px-3 py-2 rounded-l-lg text-black outline-none"
+                            className="w-full px-3 py-2 rounded-l-lg text-black outline-none border border-gray-300 focus:ring-2 focus:ring-blue-500"
                         />
                         <button className="bg-blue-500 px-4 py-2 rounded-r-lg hover:bg-blue-600 transition">
                             Subscribe

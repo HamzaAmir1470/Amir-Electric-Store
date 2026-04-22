@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUsers,
     FiUserPlus,
@@ -18,19 +19,17 @@ import {
     FiSave,
     FiX,
     FiClock,
-    FiPrinter,
     FiList,
     FiCalendar,
     FiInfo
 } from "react-icons/fi";
-import { ToastContainer } from "react-toastify";
 import { handleSuccess, handleError } from "../utils";
+import { ToastContainer } from "react-toastify";
 
 const Khata = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [notification, setNotification] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -43,26 +42,42 @@ const Khata = () => {
         customerName: "",
         phoneNumber: ""
     });
-
     const [form, setForm] = useState({
         customerName: "",
         phoneNumber: "",
         openingBalance: ""
     });
 
-    const API = "http://localhost:8080/khata";
-
-    const showNotification = (message, type = 'success') => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const API = "http://localhost:8080";
 
     const fetchKhatas = async () => {
         try {
             setLoading(true);
-            const res = await fetch(API);
+            // Fetch all khatas with their transactions
+            const res = await fetch(`${API}/khata`);
             const data = await res.json();
-            setCustomers(data.data || []);
+
+            // Fetch transactions for each khata if needed
+            const khataWithTransactions = await Promise.all(
+                (data.data || []).map(async (khata) => {
+                    try {
+                        const transactionsRes = await fetch(`${API}/khata/${khata._id}/transactions`);
+                        if (transactionsRes.ok) {
+                            const transactionsData = await transactionsRes.json();
+                            return {
+                                ...khata,
+                                transactions: transactionsData.data || []
+                            };
+                        }
+                        return { ...khata, transactions: [] };
+                    } catch (error) {
+                        console.error(`Error fetching transactions for ${khata._id}:`, error);
+                        return { ...khata, transactions: [] };
+                    }
+                })
+            );
+
+            setCustomers(khataWithTransactions);
         } catch (error) {
             console.log("Fetch error:", error);
             handleError("Failed to fetch khata records");
@@ -95,11 +110,10 @@ const Khata = () => {
                 customerName: form.customerName,
                 phoneNumber: form.phoneNumber,
                 openingBalance: Number(form.openingBalance) || 0,
-                remainingBalance: Number(form.openingBalance) || 0,
-                transactions: []
+                remainingBalance: Number(form.openingBalance) || 0
             };
 
-            const res = await fetch(API, {
+            const res = await fetch(`${API}/khata`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -110,13 +124,12 @@ const Khata = () => {
             const data = await res.json();
 
             if (res.ok) {
-                setCustomers([data.data, ...customers]);
+                setCustomers([{ ...data.data, transactions: [] }, ...customers]);
                 setForm({
                     customerName: "",
                     phoneNumber: "",
                     openingBalance: ""
                 });
-                showNotification("Khata added successfully!", "success");
                 handleSuccess("Khata added successfully!");
             } else {
                 handleError(data.message || "Error creating khata");
@@ -129,7 +142,7 @@ const Khata = () => {
 
     const handleEditCustomer = async () => {
         try {
-            const res = await fetch(`${API}/${selectedCustomer._id}`, {
+            const res = await fetch(`${API}/khata/${selectedCustomer._id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -150,7 +163,7 @@ const Khata = () => {
                 );
                 setCustomers(updatedCustomers);
                 setShowEditModal(false);
-                showNotification("Customer updated successfully!", "success");
+                handleSuccess("Customer updated successfully!");
             } else {
                 handleError(data.message || "Error updating customer");
             }
@@ -162,7 +175,7 @@ const Khata = () => {
 
     const handleDeleteCustomer = async () => {
         try {
-            const res = await fetch(`${API}/${selectedCustomer._id}`, {
+            const res = await fetch(`${API}/khata/${selectedCustomer._id}`, {
                 method: "DELETE"
             });
 
@@ -174,7 +187,7 @@ const Khata = () => {
                 );
                 setCustomers(updatedCustomers);
                 setShowDeleteConfirm(false);
-                showNotification("Customer deleted successfully!", "success");
+                handleSuccess("Customer deleted successfully!");
             } else {
                 handleError(data.message || "Error deleting customer");
             }
@@ -191,63 +204,61 @@ const Khata = () => {
         }
 
         const amount = Number(transactionAmount);
-        let newBalance = selectedCustomer.remainingBalance;
 
-        if (transactionType === "payment") {
-            newBalance = selectedCustomer.remainingBalance - amount;
-        } else {
-            newBalance = selectedCustomer.remainingBalance + amount;
-        }
+        let newBalance =
+            transactionType === "payment"
+                ? selectedCustomer.remainingBalance - amount
+                : selectedCustomer.remainingBalance + amount;
 
-        const newTransaction = {
-            amount: amount,
+        const payload = {
+            amount,
             type: transactionType,
             note: transactionNote,
-            date: new Date().toISOString(),
-            balanceAfter: newBalance
+            remainingBalance: newBalance
         };
 
         try {
-            const res = await fetch(`${API}/${selectedCustomer._id}/transaction`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    remainingBalance: newBalance,
-                    transaction: newTransaction
-                })
-            });
+            const res = await fetch(
+                `${API}/khata/${selectedCustomer._id}/transaction`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                }
+            );
 
             const data = await res.json();
 
-            if (res.ok) {
-                const updatedCustomers = customers.map(customer =>
-                    customer._id === selectedCustomer._id
-                        ? {
-                            ...customer,
-                            remainingBalance: newBalance,
-                            transactions: [...(customer.transactions || []), newTransaction]
-                        }
-                        : customer
-                );
-                setCustomers(updatedCustomers);
-                setShowTransactionModal(false);
-                setTransactionAmount("");
-                setTransactionNote("");
-                showNotification(
-                    `${transactionType === "payment" ? "Payment" : "Credit"} recorded successfully!`,
-                    "success"
-                );
-            } else {
-                handleError(data.message || "Error recording transaction");
-            }
+            if (!res.ok) throw new Error(data.message);
+
+            const updatedCustomers = customers.map((customer) =>
+                customer._id === selectedCustomer._id
+                    ? {
+                        ...customer,
+                        remainingBalance: newBalance,
+                        transactions: [
+                            ...(customer.transactions || []),
+                            data.transaction
+                        ]
+                    }
+                    : customer
+            );
+
+            setCustomers(updatedCustomers);
+            setShowTransactionModal(false);
+            setTransactionAmount("");
+            setTransactionNote("");
+
+            handleSuccess(
+                `${transactionType === "payment" ? "Payment" : "Credit"} recorded successfully!`
+            );
         } catch (error) {
             console.log(error);
-            handleError("Server error while recording transaction");
+            handleError(error.message || "Server error");
         }
     };
-
     const openEditModal = (customer) => {
         setSelectedCustomer(customer);
         setEditForm({
@@ -265,8 +276,24 @@ const Khata = () => {
         setShowTransactionModal(true);
     };
 
-    const openHistoryModal = (customer) => {
+    const openHistoryModal = async (customer) => {
         setSelectedCustomer(customer);
+        // Fetch latest transactions for this customer
+        try {
+            const transactionsRes = await fetch(`${API}/transactions/khata/${customer._id}`);
+            if (transactionsRes.ok) {
+                const transactionsData = await transactionsRes.json();
+                const updatedCustomer = { ...customer, transactions: transactionsData.data || [] };
+                setSelectedCustomer(updatedCustomer);
+                // Also update in customers array
+                const updatedCustomers = customers.map(c =>
+                    c._id === customer._id ? updatedCustomer : c
+                );
+                setCustomers(updatedCustomers);
+            }
+        } catch (error) {
+            console.error("Error fetching transactions:", error);
+        }
         setShowHistoryModal(true);
     };
 
@@ -288,16 +315,15 @@ const Khata = () => {
         a.download = `khata_report_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
-        showNotification('Khata report exported successfully', 'success');
+        handleSuccess('Khata report exported successfully');
     };
 
     const exportCustomerTransactions = (customer) => {
-        const headers = ['Date', 'Type', 'Amount', 'Balance After', 'Note'];
+        const headers = ['Date', 'Type', 'Amount', 'Note'];
         const csvData = (customer.transactions || []).map(transaction => [
             new Date(transaction.date).toLocaleString(),
             transaction.type === 'payment' ? 'Payment Received' : 'New Credit',
             transaction.amount.toFixed(2),
-            transaction.balanceAfter?.toFixed(2) || 'N/A',
             transaction.note || '-'
         ]);
 
@@ -309,18 +335,24 @@ const Khata = () => {
         a.download = `${customer.customerName}_transactions_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
-        showNotification('Transaction history exported successfully', 'success');
+        handleSuccess('Transaction history exported successfully');
     };
 
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-PK', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        if (!dateString) return "Invalid Date";
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "Invalid Date";
+            return date.toLocaleDateString('en-PK', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return "Invalid Date";
+        }
     };
 
     // Filter customers based on search
@@ -335,34 +367,55 @@ const Khata = () => {
     const totalPayable = customers.reduce((sum, c) => c.remainingBalance < 0 ? sum + Math.abs(c.remainingBalance) : sum, 0);
     const netBalance = totalReceivable - totalPayable;
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-            {/* Notification */}
-            {notification && (
-                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg animate-slide-in ${notification.type === 'success' ? 'bg-green-500' :
-                    notification.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
-                    } text-white`}>
-                    {notification.type === 'success' ? <FiCheckCircle className="text-xl" /> :
-                        notification.type === 'warning' ? <FiAlertCircle className="text-xl" /> : <FiRefreshCw className="text-xl" />}
-                    <span>{notification.message}</span>
-                </div>
-            )}
+    // Animation variants
+    const staggerContainer = {
+        animate: {
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
 
+    const cardVariants = {
+        initial: { opacity: 0, scale: 0.95 },
+        animate: { opacity: 1, scale: 1 },
+        whileHover: { y: -5, transition: { duration: 0.2 } }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8"
+        >
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8"
+                >
                     <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                        <div className="bg-blue-600 p-2 rounded-xl">
+                        <motion.div
+                            whileHover={{ rotate: 180 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-blue-600 p-2 rounded-xl"
+                        >
                             <FiUsers className="text-white text-2xl" />
-                        </div>
+                        </motion.div>
                         Khata Management System
                     </h1>
                     <p className="text-gray-600 mt-2 ml-2">Manage customer credits, debits, and transactions</p>
-                </div>
+                </motion.div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <motion.div
+                    variants={staggerContainer}
+                    initial="initial"
+                    animate="animate"
+                    className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+                >
+                    <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-500 text-sm">Total Customers</p>
@@ -370,9 +423,9 @@ const Khata = () => {
                             </div>
                             <FiUsers className="text-blue-500 text-3xl opacity-50" />
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                    <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-500 text-sm">Total Receivable</p>
@@ -380,9 +433,9 @@ const Khata = () => {
                             </div>
                             <FiTrendingUp className="text-green-500 text-3xl opacity-50" />
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                    <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-500 text-sm">Total Payable</p>
@@ -390,9 +443,9 @@ const Khata = () => {
                             </div>
                             <FiTrendingDown className="text-red-500 text-3xl opacity-50" />
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                    <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-500 text-sm">Net Balance</p>
@@ -402,11 +455,16 @@ const Khata = () => {
                             </div>
                             <FiDollarSign className="text-purple-500 text-3xl opacity-50" />
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Add Khata Form */}
-                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-white rounded-xl shadow-md p-6 mb-8"
+                >
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <FiUserPlus className="text-blue-600" />
                         Add New Khata
@@ -461,7 +519,6 @@ const Khata = () => {
                                     value={form.openingBalance}
                                     onChange={handleChange}
                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
                                 />
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
@@ -470,23 +527,29 @@ const Khata = () => {
                         </div>
 
                         <div className="md:col-span-3">
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                             >
                                 <FiUserPlus className="text-xl" />
                                 Save Khata
-                            </button>
+                            </motion.button>
                         </div>
                     </form>
                     <ToastContainer />
-                </div>
+                </motion.div>
 
                 {/* Filters and Actions */}
-                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white rounded-xl shadow-md p-6 mb-8"
+                >
                     <div className="flex flex-wrap gap-4 items-center justify-between">
                         <div className="flex flex-wrap gap-4 flex-1">
-                            {/* Search */}
                             <div className="relative flex-1 min-w-[200px]">
                                 <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                 <input
@@ -499,28 +562,36 @@ const Khata = () => {
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="flex gap-3">
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={handleExportCSV}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                             >
                                 <FiDownload />
                                 Export CSV
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={fetchKhatas}
                                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
                             >
                                 <FiRefreshCw />
                                 Refresh
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Khata Table */}
-                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-white rounded-xl shadow-md overflow-hidden"
+                >
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gray-50 border-b border-gray-200">
@@ -546,450 +617,408 @@ const Khata = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center">
-                                            <div className="flex justify-center">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : filteredCustomers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                            No khata records found
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredCustomers.map((customer) => (
-                                        <tr key={customer._id} className="hover:bg-gray-50 transition">
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-gray-900">{customer.customerName}</div>
+                                <AnimatePresence>
+                                    {loading ? (
+                                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                            <td colSpan="6" className="px-6 py-12 text-center">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                    className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"
+                                                />
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {customer.phoneNumber || "-"}
+                                        </motion.tr>
+                                    ) : filteredCustomers.length === 0 ? (
+                                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                No khata records found
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                Rs. {customer.openingBalance?.toFixed(2) || "0.00"}
-                                            </td>
-                                            <td className={`px-6 py-4 text-sm font-bold ${customer.remainingBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                                Rs. {customer.remainingBalance?.toFixed(2) || "0.00"}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {customer.remainingBalance >= 0 ? (
-                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                                        <FiTrendingUp className="text-xs" />
-                                                        You Will Receive
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-                                                        <FiTrendingDown className="text-xs" />
-                                                        You Will Pay
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => openHistoryModal(customer)}
-                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-                                                        title="View Transaction History"
-                                                    >
-                                                        <FiClock />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openTransactionModal(customer)}
-                                                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
-                                                        title="Add Transaction"
-                                                    >
-                                                        <FiPlus />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openEditModal(customer)}
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                        title="Edit Customer"
-                                                    >
-                                                        <FiEdit2 />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedCustomer(customer);
-                                                            setShowDeleteConfirm(true);
-                                                        }}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                        title="Delete Customer"
-                                                    >
-                                                        <FiTrash2 />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                        </motion.tr>
+                                    ) : (
+                                        filteredCustomers.map((customer, index) => (
+                                            <motion.tr
+                                                key={customer._id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 20 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                whileHover={{ backgroundColor: '#F9FAFB' }}
+                                                className="transition"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-gray-900">{customer.customerName}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {customer.phoneNumber || "-"}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                    Rs. {customer.openingBalance?.toFixed(2) || "0.00"}
+                                                </td>
+                                                <td className={`px-6 py-4 text-sm font-bold ${customer.remainingBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                                    Rs. {customer.remainingBalance?.toFixed(2) || "0.00"}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {customer.remainingBalance >= 0 ? (
+                                                        <motion.span whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                                            <FiTrendingUp className="text-xs" />
+                                                            You Will Receive
+                                                        </motion.span>
+                                                    ) : (
+                                                        <motion.span whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
+                                                            <FiTrendingDown className="text-xs" />
+                                                            You Will Pay
+                                                        </motion.span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex gap-2">
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            onClick={() => openHistoryModal(customer)}
+                                                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                                                            title="View Transaction History"
+                                                        >
+                                                            <FiClock />
+                                                        </motion.button>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            onClick={() => openTransactionModal(customer)}
+                                                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                                                            title="Add Transaction"
+                                                        >
+                                                            <FiPlus />
+                                                        </motion.button>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            onClick={() => openEditModal(customer)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                                            title="Edit Customer"
+                                                        >
+                                                            <FiEdit2 />
+                                                        </motion.button>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            onClick={() => {
+                                                                setSelectedCustomer(customer);
+                                                                setShowDeleteConfirm(true);
+                                                            }}
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                            title="Delete Customer"
+                                                        >
+                                                            <FiTrash2 />
+                                                        </motion.button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        ))
+                                    )}
+                                </AnimatePresence>
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Transaction History Modal */}
-            {showHistoryModal && selectedCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                    <FiClock className="text-indigo-600" />
-                                    Transaction History
-                                </h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {selectedCustomer.customerName} - {selectedCustomer.phoneNumber || "No phone"}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => exportCustomerTransactions(selectedCustomer)}
-                                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
-                                >
-                                    <FiDownload />
-                                    Export
-                                </button>
-                                <button
-                                    onClick={() => setShowHistoryModal(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <FiX className="text-xl" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Balance Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div className="bg-blue-50 rounded-lg p-3">
-                                <p className="text-xs text-gray-600">Opening Balance</p>
-                                <p className="text-lg font-bold text-blue-600">Rs. {selectedCustomer.openingBalance?.toFixed(2)}</p>
-                            </div>
-                            <div className="bg-purple-50 rounded-lg p-3">
-                                <p className="text-xs text-gray-600">Current Balance</p>
-                                <p className={`text-lg font-bold ${selectedCustomer.remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    Rs. {selectedCustomer.remainingBalance?.toFixed(2)}
-                                </p>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-xs text-gray-600">Total Transactions</p>
-                                <p className="text-lg font-bold text-gray-700">{selectedCustomer.transactions?.length || 0}</p>
-                            </div>
-                        </div>
-
-                        {/* Transactions Table */}
-                        {selectedCustomer.transactions && selectedCustomer.transactions.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Date & Time
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Type
-                                            </th>
-                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Amount
-                                            </th>
-                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Balance After
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Note
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {[...(selectedCustomer.transactions || [])].reverse().map((transaction, index) => (
-                                            <tr key={index} className="hover:bg-gray-50 transition">
-                                                <td className="px-4 py-3 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-1">
-                                                        <FiCalendar className="text-xs" />
-                                                        {formatDate(transaction.date)}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {transaction.type === "payment" ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                            <FiMinus className="text-xs" />
-                                                            Payment Received
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
-                                                            <FiPlus className="text-xs" />
-                                                            New Credit
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className={`px-4 py-3 text-right text-sm font-semibold ${transaction.type === "payment" ? "text-green-600" : "text-red-600"}`}>
-                                                    {transaction.type === "payment" ? "-" : "+"} Rs. {transaction.amount?.toFixed(2) || "N/A"}
-                                                </td>
-                                                <td className="px-4 py-3 text-right text-sm text-gray-700">
-                                                    Rs. {transaction.balanceAfter?.toFixed(2) || "N/A"}
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-gray-500">
-                                                    {transaction.note ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <FiInfo className="text-xs text-gray-400" />
-                                                            {transaction.note}
-                                                        </div>
-                                                    ) : (
-                                                        "-"
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12">
-                                <FiList className="text-gray-300 text-5xl mx-auto mb-3" />
-                                <p className="text-gray-500">No transactions found for this customer</p>
-                                <button
-                                    onClick={() => {
-                                        setShowHistoryModal(false);
-                                        openTransactionModal(selectedCustomer);
-                                    }}
-                                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                                >
-                                    <FiPlus />
-                                    Add First Transaction
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="flex justify-end mt-6">
-                            <button
-                                onClick={() => setShowHistoryModal(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Customer Modal */}
-            {showEditModal && selectedCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-800">Edit Customer</h3>
-                            <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <FiX className="text-xl" />
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Customer Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editForm.customerName}
-                                    onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Phone Number
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editForm.phoneNumber}
-                                    onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex gap-3 mt-6">
-                            <button
-                                onClick={handleEditCustomer}
-                                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                            >
-                                <FiSave />
-                                Save Changes
-                            </button>
-                            <button
-                                onClick={() => setShowEditModal(false)}
-                                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Transaction Modal */}
-            {showTransactionModal && selectedCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-800">Add Transaction</h3>
-                            <button onClick={() => setShowTransactionModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <FiX className="text-xl" />
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-sm text-gray-600 mb-2">
-                                    Customer: <span className="font-semibold">{selectedCustomer.customerName}</span>
-                                </p>
-                                <p className={`text-sm font-semibold mb-4 ${selectedCustomer.remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    Current Balance: Rs. {selectedCustomer.remainingBalance?.toFixed(2)}
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Transaction Type
-                                </label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            value="payment"
-                                            checked={transactionType === "payment"}
-                                            onChange={(e) => setTransactionType(e.target.value)}
-                                            className="text-blue-600"
-                                        />
-                                        <span className="flex items-center gap-1">
-                                            <FiMinus className="text-red-500" />
-                                            Payment Received
-                                        </span>
-                                    </label>
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            value="credit"
-                                            checked={transactionType === "credit"}
-                                            onChange={(e) => setTransactionType(e.target.value)}
-                                            className="text-blue-600"
-                                        />
-                                        <span className="flex items-center gap-1">
-                                            <FiPlus className="text-green-500" />
-                                            New Credit
-                                        </span>
-                                    </label>
+            <AnimatePresence>
+                {showHistoryModal && selectedCustomer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        <FiClock className="text-indigo-600" />
+                                        Transaction History
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {selectedCustomer.customerName} - {selectedCustomer.phoneNumber || "No phone"}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => exportCustomerTransactions(selectedCustomer)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                                    >
+                                        <FiDownload />
+                                        Export
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ rotate: 90 }}
+                                        onClick={() => setShowHistoryModal(false)}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <FiX className="text-xl" />
+                                    </motion.button>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Amount (Rs.)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={transactionAmount}
-                                    onChange={(e) => setTransactionAmount(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter amount"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Note (Optional)
-                                </label>
-                                <textarea
-                                    value={transactionNote}
-                                    onChange={(e) => setTransactionNote(e.target.value)}
-                                    rows="3"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Add a note about this transaction..."
-                                />
-                            </div>
-                        </div>
-                        <div className="flex gap-3 mt-6">
-                            <button
-                                onClick={handleTransaction}
-                                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
-                            >
-                                <FiSave />
-                                Save Transaction
-                            </button>
-                            <button
-                                onClick={() => setShowTransactionModal(false)}
-                                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && selectedCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-                        <div className="text-center">
-                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                                <FiAlertCircle className="text-red-600 text-2xl" />
+                            {/* Balance Summary */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-blue-50 rounded-lg p-3">
+                                    <p className="text-xs text-gray-600">Opening Balance</p>
+                                    <p className="text-lg font-bold text-blue-600">Rs. {selectedCustomer.openingBalance?.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-purple-50 rounded-lg p-3">
+                                    <p className="text-xs text-gray-600">Current Balance</p>
+                                    <p className={`text-lg font-bold ${selectedCustomer.remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        Rs. {selectedCustomer.remainingBalance?.toFixed(2)}
+                                    </p>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                    <p className="text-xs text-gray-600">Total Transactions</p>
+                                    <p className="text-lg font-bold text-gray-700">{selectedCustomer.transactions?.length || 0}</p>
+                                </div>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Customer</h3>
-                            <p className="text-gray-600 mb-4">
-                                Are you sure you want to delete <span className="font-semibold">{selectedCustomer.customerName}</span>?
-                                This will remove all their khata records and cannot be undone.
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={handleDeleteCustomer}
-                                    className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition"
+
+                            {/* Transactions Table */}
+                            {selectedCustomer.transactions && selectedCustomer.transactions.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Date & Time
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Type
+                                                </th>
+                                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Amount
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Note
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {[...(selectedCustomer.transactions || [])].reverse().map((transaction, index) => (
+                                                <motion.tr
+                                                    key={transaction._id || index}
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    whileHover={{ backgroundColor: '#F9FAFB' }}
+                                                    className="transition"
+                                                >
+                                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                                        <div className="flex items-center gap-1">
+                                                            <FiCalendar className="text-xs" />
+                                                            {formatDate(transaction.date)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {transaction.type === "payment" ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                                                                <FiMinus className="text-xs" />
+                                                                Payment Received
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
+                                                                <FiPlus className="text-xs" />
+                                                                New Credit
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className={`px-4 py-3 text-right text-sm font-semibold ${transaction.type === "payment" ? "text-green-600" : "text-red-600"}`}>
+                                                        {transaction.type === "payment" ? "-" : "+"} Rs. {transaction.amount?.toFixed(2) || "0.00"}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-500">
+                                                        {transaction.note ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <FiInfo className="text-xs text-gray-400" />
+                                                                {transaction.note}
+                                                            </div>
+                                                        ) : (
+                                                            "-"
+                                                        )}
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <FiList className="text-gray-300 text-5xl mx-auto mb-3" />
+                                    <p className="text-gray-500">No transactions found for this customer</p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => {
+                                            setShowHistoryModal(false);
+                                            openTransactionModal(selectedCustomer);
+                                        }}
+                                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                                    >
+                                        <FiPlus />
+                                        Add First Transaction
+                                    </motion.button>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end mt-6">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setShowHistoryModal(false)}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                                 >
-                                    Delete
-                                </button>
-                                <button
-                                    onClick={() => setShowDeleteConfirm(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
-                                >
+                                    Close
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* Edit Customer Modal */}
+                {showEditModal && selectedCustomer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-800">Edit Customer</h3>
+                                <motion.button whileHover={{ rotate: 90 }} onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+                                    <FiX className="text-xl" />
+                                </motion.button>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
+                                    <input type="text" value={editForm.customerName} onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                    <input type="text" value={editForm.phoneNumber} onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleEditCustomer} className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                    <FiSave /> Save Changes
+                                </motion.button>
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowEditModal(false)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">
                                     Cancel
-                                </button>
+                                </motion.button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </motion.div>
+                    </motion.div>
+                )}
 
-            <style jsx>{`
-                @keyframes slide-in {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-                
-                @keyframes fade-in {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-                
-                .animate-slide-in {
-                    animation: slide-in 0.3s ease-out;
-                }
-                
-                .animate-fade-in {
-                    animation: fade-in 0.2s ease-out;
-                }
-            `}</style>
-        </div>
+                {/* Transaction Modal */}
+                {showTransactionModal && selectedCustomer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-800">Add Transaction</h3>
+                                <motion.button whileHover={{ rotate: 90 }} onClick={() => setShowTransactionModal(false)} className="text-gray-400 hover:text-gray-600">
+                                    <FiX className="text-xl" />
+                                </motion.button>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-2">Customer: <span className="font-semibold">{selectedCustomer.customerName}</span></p>
+                                    <p className={`text-sm font-semibold mb-4 ${selectedCustomer.remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        Current Balance: Rs. {selectedCustomer.remainingBalance?.toFixed(2)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2">
+                                            <input type="radio" value="payment" checked={transactionType === "payment"} onChange={(e) => setTransactionType(e.target.value)} className="text-blue-600" />
+                                            <span className="flex items-center gap-1"><FiMinus className="text-red-500" /> Payment Received</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input type="radio" value="credit" checked={transactionType === "credit"} onChange={(e) => setTransactionType(e.target.value)} className="text-blue-600" />
+                                            <span className="flex items-center gap-1"><FiPlus className="text-green-500" /> New Credit</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Amount (Rs.)</label>
+                                    <input type="number" step="0.01" value={transactionAmount} onChange={(e) => setTransactionAmount(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter amount" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Note (Optional)</label>
+                                    <textarea value={transactionNote} onChange={(e) => setTransactionNote(e.target.value)} rows="3" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Add a note about this transaction..." />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleTransaction} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                                    <FiSave /> Save Transaction
+                                </motion.button>
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowTransactionModal(false)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">
+                                    Cancel
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteConfirm && selectedCustomer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+                        >
+                            <div className="text-center">
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200 }} className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                    <FiAlertCircle className="text-red-600 text-2xl" />
+                                </motion.div>
+                                <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Customer</h3>
+                                <p className="text-gray-600 mb-4">Are you sure you want to delete <span className="font-semibold">{selectedCustomer.customerName}</span>? This will remove all their khata records and cannot be undone.</p>
+                                <div className="flex gap-3">
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleDeleteCustomer} className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">Delete</motion.button>
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowDeleteConfirm(false)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">Cancel</motion.button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 

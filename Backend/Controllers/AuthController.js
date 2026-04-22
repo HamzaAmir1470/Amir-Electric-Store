@@ -139,6 +139,112 @@ const getProfile = async (req, res) => {
     }
 };
 
+// update user profile
+const updateUser = async (req, res) => {
+    try {
+        const userId = req.user?._id;
+        const { name } = req.body;
+
+        // 1. Validation
+        if (!name) {
+            return res.status(400).json({
+                message: "Name is required",
+                success: false
+            });
+        }
+
+        // 2. Find and update user
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name },
+            { returnDocument: "after" }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Profile updated successfully",
+            success: true,
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error("Update User Error:", error);
+        return res.status(500).json({
+            message: "Error updating profile",
+            success: false,
+            error: error.message
+        });
+    }
+};
+// Change Password
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.user?._id;
+
+        const { currentPassword, newPassword } = req.body;
+
+        // 1. Validation
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false
+            });
+        }
+
+        // 2. Get user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false
+            });
+        }
+
+        // 3. Check current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Current password is incorrect",
+                success: false
+            });
+        }
+
+        // 4. Prevent same password reuse
+        if (currentPassword === newPassword) {
+            return res.status(400).json({
+                message: "New password must be different",
+                success: false
+            });
+        }
+
+        // 5. Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // 6. Update
+        user.password = hashedPassword;
+        await user.save();
+
+        return res.status(200).json({
+            message: "Password changed successfully",
+            success: true
+        });
+
+    } catch (error) {
+        console.error("Change Password Error:", error);
+        return res.status(500).json({
+            message: "Server error",
+            success: false,
+            error: error.message
+        });
+    }
+};
+
 // Logout Controller
 const logout = async (req, res) => {
     try {
@@ -161,5 +267,7 @@ module.exports = {
     signup,
     login,
     logout,
-    getProfile
+    getProfile,
+    changePassword,
+    updateUser
 };

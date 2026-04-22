@@ -42,7 +42,7 @@ const createKhata = async (req, res) => {
 };
 
 
-// ➤ Get All Khatas
+//  Get All Khatas
 const getAllKhatas = async (req, res) => {
     try {
         const khatas = await Khata.find().sort({ createdAt: -1 });
@@ -134,7 +134,6 @@ const updateKhata = async (req, res) => {
     }
 };
 
-
 //  Delete Khata (Safe + Cascade Delete)
 const deleteKhata = async (req, res) => {
     try {
@@ -167,13 +166,17 @@ const deleteKhata = async (req, res) => {
     }
 };
 
-//  Add Transaction & Update Balance
 const addTransaction = async (req, res) => {
     try {
         const khataId = req.params.id;
 
-        const { amount, type, note } = req.body.transaction;
-        const newRemainingBalance = req.body.remainingBalance;
+        const { amount, type, note, remainingBalance } = req.body;
+
+        if (!amount || !type) {
+            return res.status(400).json({
+                message: "Amount and type are required"
+            });
+        }
 
         const khata = await Khata.findById(khataId);
 
@@ -191,25 +194,49 @@ const addTransaction = async (req, res) => {
             note
         });
 
-        //  Update khata balance + push transaction
-        khata.remainingBalance = newRemainingBalance;
+        // Update balance
+        khata.remainingBalance = remainingBalance;
         khata.transactions.push(transaction._id);
 
         await khata.save();
 
         return res.status(200).json({
             message: "Transaction added successfully",
-            transaction,
-            khata
+            transaction
         });
 
     } catch (error) {
+        console.error(error);
         return res.status(500).json({
             message: "Server error",
             error: error.message
         });
     }
 };
+
+// Get Transactions by Khata
+const getTransactionsByKhata = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const transactions = await Transaction.find({ khata: id }) // ✅ fixed
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: transactions
+        });
+
+    } catch (error) {
+        console.error("Get Transactions Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching transactions",
+            error: error.message
+        });
+    }
+};
+
 
 
 module.exports = {
@@ -218,5 +245,6 @@ module.exports = {
     getKhataById,
     updateKhata,
     deleteKhata,
-    addTransaction
+    addTransaction,
+    getTransactionsByKhata
 };

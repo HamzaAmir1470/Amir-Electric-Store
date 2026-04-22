@@ -26,10 +26,10 @@ const Contact = () => {
                         <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
 
                         <div className="space-y-4 text-gray-700">
-                            <p>📍 <strong>Address:</strong> Kasur, Punjab, Pakistan</p>
-                            <p>📞 <strong>Phone:</strong> +92 305 4124410</p>
-                            <p>✉️ <strong>Email:</strong> mh041829@gmail.com</p>
-                            <p>⏰ <strong>Hours:</strong> Mon - Sat (9:00 AM - 9:00 PM)</p>
+                            <p> <strong>Address:</strong> Lahore, Punjab, Pakistan</p>
+                            <p> <strong>Phone:</strong> +92 305 4124410</p>
+                            <p> <strong>Email:</strong> mh041829@gmail.com</p>
+                            <p> <strong>Hours:</strong> Mon - Sat (9:00 AM - 9:00 PM)</p>
                         </div>
 
                         {/* WhatsApp Button */}
@@ -39,7 +39,7 @@ const Contact = () => {
                             rel="noreferrer"
                             className="inline-block mt-6 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition shadow-lg"
                         >
-                            💬 Chat on WhatsApp
+                         Chat on WhatsApp
                         </a>
                     </div>
 

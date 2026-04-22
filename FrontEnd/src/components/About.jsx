@@ -1,6 +1,7 @@
 import React from "react";
 import Footer from "./Footer";
 import Header from "./Header";
+import { Link } from "react-router-dom";
 
 const About = () => {
     return (
@@ -48,10 +49,11 @@ const About = () => {
                                 From basic wiring accessories to advanced electrical equipment,
                                 we ensure every product meets quality standards and customer expectations.
                             </p>
-
-                            <button className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-lg">
-                                Contact Us
-                            </button>
+                            <Link to="/contact">
+                                <button className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-lg">
+                                    Contact Us
+                                </button>
+                            </Link>
                         </div>
 
                     </div>

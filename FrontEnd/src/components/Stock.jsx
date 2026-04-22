@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPackage,
   FiSearch,
@@ -21,7 +22,6 @@ import {
   FiTag,
   FiShoppingBag
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
 import { handleError, handleSuccess } from '../utils';
 
 const Stock = () => {
@@ -39,7 +39,6 @@ const Stock = () => {
     wholesalePrice: '',
     retailPrice: ''
   });
-  const [notification, setNotification] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
 
   // Bulk update states
@@ -48,7 +47,7 @@ const Stock = () => {
   const [bulkStockValue, setBulkStockValue] = useState('');
   const [selectAll, setSelectAll] = useState(false);
 
-  // Mock categories
+  // Categories
   const categories = [
     'Electronics',
     'Motors',
@@ -73,7 +72,6 @@ const Stock = () => {
         handleError(result.message || "Failed to fetch products");
       }
 
-      // Map backend data → frontend format
       const formattedProducts = result.data.map((item) => ({
         id: item._id,
         name: item.name,
@@ -98,11 +96,6 @@ const Stock = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleUpdateStockAndPrices = async () => {
@@ -132,18 +125,15 @@ const Stock = () => {
       }
 
       await fetchProducts();
-
       setShowEditModal(false);
-      showNotification(
-        `Product updated for ${selectedProduct.name}`,
-        "success"
-      );
+      handleSuccess(`Product updated for ${selectedProduct.name}`);
 
     } catch (error) {
       console.error(error);
       handleError(error.message || "Failed to update product");
     }
   };
+
   const handleDeleteProduct = async () => {
     try {
       const response = await fetch(
@@ -166,11 +156,11 @@ const Stock = () => {
       setProducts(updatedProducts);
       setShowDeleteConfirm(false);
       setSelectedProducts(prev => prev.filter(id => id !== selectedProduct.id));
-      handleSuccess(`${selectedProduct.name} has been deleted`, "warning");
+      handleSuccess(`${selectedProduct.name} has been deleted`);
 
     } catch (error) {
       console.error(error);
-      handleError(error.message, "error");
+      handleError(error.message);
     }
   };
 
@@ -196,7 +186,7 @@ const Stock = () => {
 
   const openBulkModal = () => {
     if (selectedProducts.length === 0) {
-      showNotification("Please select at least one product", "warning");
+      handleError("Please select at least one product");
       return;
     }
     setBulkStockValue('');
@@ -205,13 +195,13 @@ const Stock = () => {
 
   const handleBulkUpdate = async () => {
     if (!selectedProducts.length) {
-      showNotification("No products selected", "warning");
+      handleError("No products selected");
       return;
     }
 
     const newStockValue = parseInt(bulkStockValue);
     if (isNaN(newStockValue) || newStockValue < 0) {
-      showNotification("Please enter a valid stock quantity (0 or more)", "error");
+      handleError("Please enter a valid stock quantity (0 or more)");
       return;
     }
 
@@ -244,11 +234,11 @@ const Stock = () => {
       setShowBulkModal(false);
       setSelectedProducts([]);
       setSelectAll(false);
-      showNotification(`Successfully updated stock for ${selectedProducts.length} product(s)`, "success");
+      handleSuccess(`Successfully updated stock for ${selectedProducts.length} product(s)`);
 
     } catch (error) {
       console.error(error);
-      showNotification(error.message || "Bulk update failed", "error");
+      handleError(error.message || "Bulk update failed");
     }
   };
 
@@ -277,7 +267,7 @@ const Stock = () => {
     a.download = `stock_report_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showNotification('Stock report exported successfully', 'success');
+    handleSuccess('Stock report exported successfully');
   };
 
   const handleSort = (key) => {
@@ -336,34 +326,62 @@ const Stock = () => {
   const totalInventoryValue = products.reduce((sum, product) => sum + (product.purchasePrice * product.stock), 0);
   const potentialRevenue = products.reduce((sum, product) => sum + (product.retailPrice * product.stock), 0);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-      {/* Notification */}
-      {notification && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg animate-slide-in ${notification.type === 'success' ? 'bg-green-500' :
-          notification.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
-          } text-white`}>
-          {notification.type === 'success' ? <FiCheckCircle className="text-xl" /> :
-            notification.type === 'warning' ? <FiAlertCircle className="text-xl" /> : <FiRefreshCw className="text-xl" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+  // Animation variants
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+    transition: { duration: 0.3 }
+  };
 
+  const staggerContainer = {
+    animate: {
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const cardVariants = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    whileHover: { y: -5, transition: { duration: 0.2 } }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8"
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl">
+            <motion.div
+              whileHover={{ rotate: 180 }}
+              transition={{ duration: 0.3 }}
+              className="bg-blue-600 p-2 rounded-xl"
+            >
               <FiPackage className="text-white text-2xl" />
-            </div>
+            </motion.div>
             Stock Management
           </h1>
           <p className="text-gray-600 mt-2 ml-2">Monitor and manage your inventory levels and pricing</p>
-        </div>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-500">
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8"
+        >
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Total Products</p>
@@ -371,9 +389,9 @@ const Stock = () => {
               </div>
               <FiPackage className="text-blue-500 text-2xl opacity-50" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-green-500">
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Total Stock Units</p>
@@ -381,9 +399,9 @@ const Stock = () => {
               </div>
               <FiTrendingUp className="text-green-500 text-2xl opacity-50" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-purple-500">
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-purple-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Inventory Value</p>
@@ -391,9 +409,9 @@ const Stock = () => {
               </div>
               <FiDollarSign className="text-purple-500 text-2xl opacity-50" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-indigo-500">
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-indigo-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Potential Revenue</p>
@@ -401,9 +419,9 @@ const Stock = () => {
               </div>
               <FiTrendingUp className="text-indigo-500 text-2xl opacity-50" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-orange-500">
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-orange-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Low Stock Items</p>
@@ -411,9 +429,9 @@ const Stock = () => {
               </div>
               <FiTrendingDown className="text-orange-500 text-2xl opacity-50" />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-500">
+          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-xs">Out of Stock</p>
@@ -421,11 +439,16 @@ const Stock = () => {
               </div>
               <FiAlertCircle className="text-red-500 text-2xl opacity-50" />
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Filters and Actions */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-xl shadow-md p-6 mb-8"
+        >
           <div className="flex flex-wrap gap-4 items-center justify-between">
             <div className="flex flex-wrap gap-4 flex-1">
               {/* Search */}
@@ -470,33 +493,44 @@ const Stock = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={openBulkModal}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
               >
                 <FiRefreshCw />
                 Bulk Update
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleExportCSV}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
               >
                 <FiDownload />
                 Export CSV
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={fetchProducts}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
               >
                 <FiRefreshCw />
                 Refresh
-              </button>
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Products Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-xl shadow-md overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -546,344 +580,419 @@ const Stock = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {loading ? (
-                  <tr>
-                    <td colSpan="10" className="px-6 py-12 text-center">
-                      <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan="10" className="px-6 py-12 text-center text-gray-500">
-                      No products found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredProducts.map((product) => {
-                    const stockStatus = getStockStatus(product.stock);
-                    const StatusIcon = stockStatus.icon;
-                    const profitMargin = ((product.retailPrice - product.purchasePrice) / product.purchasePrice * 100).toFixed(2);
+                <AnimatePresence>
+                  {loading ? (
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <td colSpan="10" className="px-6 py-12 text-center">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"
+                        />
+                      </td>
+                    </motion.tr>
+                  ) : filteredProducts.length === 0 ? (
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <td colSpan="10" className="px-6 py-12 text-center text-gray-500">
+                        No products found
+                      </td>
+                    </motion.tr>
+                  ) : (
+                    filteredProducts.map((product, index) => {
+                      const stockStatus = getStockStatus(product.stock);
+                      const StatusIcon = stockStatus.icon;
+                      const profitMargin = ((product.retailPrice - product.purchasePrice) / product.purchasePrice * 100).toFixed(2);
 
-                    return (
-                      <tr key={product.id} className="hover:bg-gray-50 transition">
-                        <td className="px-4 py-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={() => handleSelectProduct(product.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.description}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{product.sku}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                            {product.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          ${product.purchasePrice.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-blue-600">
-                          ${product.wholesalePrice.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-green-600">${product.retailPrice.toFixed(2)}</span>
-                            <span className={`text-xs ${profitMargin >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                              Margin: {profitMargin}%
+                      return (
+                        <motion.tr
+                          key={product.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ delay: index * 0.02 }}
+                          whileHover={{ backgroundColor: '#F9FAFB' }}
+                          className="transition"
+                        >
+                          <td className="px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={() => handleSelectProduct(product.id)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900">{product.name}</div>
+                            <div className="text-sm text-gray-500">{product.description}</div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{product.sku}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                              {product.category}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${product.stock === 0 ? 'bg-red-100 text-red-700' :
-                            product.stock < 10 ? 'bg-orange-100 text-orange-700' :
-                              'bg-green-100 text-green-700'
-                            }`}>
-                            {product.stock} units
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 text-sm ${stockStatus.color === 'red' ? 'text-red-600' : stockStatus.color === 'orange' ? 'text-orange-600' : 'text-green-600'}`}>
-                            <StatusIcon />
-                            {stockStatus.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => openEditModal(product)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                              title="Edit Product"
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            ${product.purchasePrice.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-blue-600">
+                            ${product.wholesalePrice.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-green-600">${product.retailPrice.toFixed(2)}</span>
+                              <span className={`text-xs ${profitMargin >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                Margin: {profitMargin}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <motion.span
+                              whileHover={{ scale: 1.05 }}
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border
+                                ${product.stock === 0
+                                  ? 'bg-red-50 text-red-700 border-red-200'
+                                  : product.stock < 10
+                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                    : 'bg-green-50 text-green-700 border-green-200'
+                                }`}
                             >
-                              <FiEdit2 />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedProduct(product);
-                                setShowDeleteConfirm(true);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                              title="Delete Product"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
+                              <motion.span
+                                animate={product.stock > 0 && product.stock < 10 ? { scale: [1, 1.2, 1] } : {}}
+                                transition={{ duration: 1, repeat: Infinity }}
+                                className={`w-2 h-2 rounded-full 
+                                  ${product.stock === 0
+                                    ? 'bg-red-500'
+                                    : product.stock < 10
+                                      ? 'bg-yellow-500'
+                                      : 'bg-green-500'
+                                  }`}
+                              />
+                              {product.stock === 0
+                                ? 'Out of Stock'
+                                : product.stock < 10
+                                  ? `Low Stock (${product.stock})`
+                                  : `In Stock (${product.stock})`}
+                            </motion.span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1 text-sm ${stockStatus.color === 'red' ? 'text-red-600' : stockStatus.color === 'orange' ? 'text-orange-600' : 'text-green-600'}`}>
+                              <StatusIcon />
+                              {stockStatus.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => openEditModal(product)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                title="Edit Product"
+                              >
+                                <FiEdit2 />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  setSelectedProduct(product);
+                                  setShowDeleteConfirm(true);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                title="Delete Product"
+                              >
+                                <FiTrash2 />
+                              </motion.button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })
+                  )}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Edit Product Modal with Prices */}
-      {showEditModal && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Edit Product</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
-                <FiX className="text-xl" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product: <span className="font-semibold">{selectedProduct.name}</span>
-                </label>
+      {/* Modals with Framer Motion */}
+      <AnimatePresence>
+        {/* Edit Product Modal */}
+        {showEditModal && selectedProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Edit Product</h3>
+                <motion.button
+                  whileHover={{ rotate: 90 }}
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="text-xl" />
+                </motion.button>
               </div>
 
-              {/* Stock Update Section */}
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <FiPackage className="text-blue-600" />
-                  Stock Information
-                </h4>
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Current Stock: <span className="font-semibold">{selectedProduct.stock} units</span>
+                    Product: <span className="font-semibold">{selectedProduct.name}</span>
                   </label>
-                  <input
-                    type="number"
-                    value={editStockValue}
-                    onChange={(e) => setEditStockValue(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter new stock quantity"
-                  />
                 </div>
-              </div>
 
-              {/* Pricing Section */}
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <FiDollarSign className="text-green-600" />
-                  Pricing Information
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Stock Update Section */}
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <FiPackage className="text-blue-600" />
+                    Stock Information
+                  </h4>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                      <FiShoppingBag className="text-gray-500" />
-                      Purchase Price
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Current Stock: <span className="font-semibold">{selectedProduct.stock} units</span>
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.purchasePrice}
-                        onChange={(e) => setEditPrices({ ...editPrices, purchasePrice: e.target.value })}
-                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                      <FiTag className="text-blue-600" />
-                      Wholesale Price
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.wholesalePrice}
-                        onChange={(e) => setEditPrices({ ...editPrices, wholesalePrice: e.target.value })}
-                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                      <FiDollarSign className="text-green-600" />
-                      Retail Price
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.retailPrice}
-                        onChange={(e) => setEditPrices({ ...editPrices, retailPrice: e.target.value })}
-                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.00"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={editStockValue}
+                      onChange={(e) => setEditStockValue(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter new stock quantity"
+                    />
                   </div>
                 </div>
 
-                {/* Profit Margin Preview */}
-                {editPrices.purchasePrice && editPrices.retailPrice && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">
-                      Profit Margin Preview:
-                      <span className={`ml-2 font-semibold ${((parseFloat(editPrices.retailPrice) - parseFloat(editPrices.purchasePrice)) / parseFloat(editPrices.purchasePrice) * 100) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {((parseFloat(editPrices.retailPrice) - parseFloat(editPrices.purchasePrice)) / parseFloat(editPrices.purchasePrice) * 100).toFixed(2)}%
-                      </span>
+                {/* Pricing Section */}
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <FiDollarSign className="text-green-600" />
+                    Pricing Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                        <FiShoppingBag className="text-gray-500" />
+                        Purchase Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editPrices.purchasePrice}
+                          onChange={(e) => setEditPrices({ ...editPrices, purchasePrice: e.target.value })}
+                          className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                        <FiTag className="text-blue-600" />
+                        Wholesale Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editPrices.wholesalePrice}
+                          onChange={(e) => setEditPrices({ ...editPrices, wholesalePrice: e.target.value })}
+                          className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                        <FiDollarSign className="text-green-600" />
+                        Retail Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editPrices.retailPrice}
+                          onChange={(e) => setEditPrices({ ...editPrices, retailPrice: e.target.value })}
+                          className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
+
+                  {/* Profit Margin Preview */}
+                  {editPrices.purchasePrice && editPrices.retailPrice && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="text-sm text-gray-600">
+                        Profit Margin Preview:
+                        <span className={`ml-2 font-semibold ${((parseFloat(editPrices.retailPrice) - parseFloat(editPrices.purchasePrice)) / parseFloat(editPrices.purchasePrice) * 100) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {((parseFloat(editPrices.retailPrice) - parseFloat(editPrices.purchasePrice)) / parseFloat(editPrices.purchasePrice) * 100).toFixed(2)}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleUpdateStockAndPrices}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-              >
-                <FiSave />
-                Save Changes
-              </button>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Update Modal */}
-      {showBulkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Bulk Stock Update</h3>
-              <button onClick={() => setShowBulkModal(false)} className="text-gray-400 hover:text-gray-600">
-                <FiX className="text-xl" />
-              </button>
-            </div>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Updating stock for <span className="font-semibold text-blue-600">{selectedProducts.length}</span> selected product(s)
-              </p>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Stock Quantity
-              </label>
-              <input
-                type="number"
-                value={bulkStockValue}
-                onChange={(e) => setBulkStockValue(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter new stock quantity for all selected products"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleBulkUpdate}
-                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
-              >
-                <FiSave />
-                Update All
-              </button>
-              <button
-                onClick={() => setShowBulkModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <FiAlertCircle className="text-red-600 text-2xl" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Product</h3>
-              <p className="text-gray-600 mb-4">
-                Are you sure you want to delete <span className="font-semibold">{selectedProduct.name}</span>?
-                This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDeleteProduct}
-                  className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition"
+              <div className="flex gap-3 mt-6">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleUpdateStockAndPrices}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
                 >
-                  Delete
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
+                  <FiSave />
+                  Save Changes
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowEditModal(false)}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
                 >
                   Cancel
-                </button>
+                </motion.button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
 
-      <style jsx>{`
-        @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-      `}</style>
-    </div>
+        {/* Bulk Update Modal */}
+        {showBulkModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Bulk Stock Update</h3>
+                <motion.button
+                  whileHover={{ rotate: 90 }}
+                  onClick={() => setShowBulkModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="text-xl" />
+                </motion.button>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  Updating stock for <span className="font-semibold text-blue-600">{selectedProducts.length}</span> selected product(s)
+                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Stock Quantity
+                </label>
+                <input
+                  type="number"
+                  value={bulkStockValue}
+                  onChange={(e) => setBulkStockValue(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter new stock quantity for all selected products"
+                />
+              </div>
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBulkUpdate}
+                  className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                >
+                  <FiSave />
+                  Update All
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowBulkModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && selectedProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"
+                >
+                  <FiAlertCircle className="text-red-600 text-2xl" />
+                </motion.div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Product</h3>
+                <p className="text-gray-600 mb-4">
+                  Are you sure you want to delete <span className="font-semibold">{selectedProduct.name}</span>?
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteProduct}
+                    className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition"
+                  >
+                    Delete
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

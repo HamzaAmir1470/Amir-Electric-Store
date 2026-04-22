@@ -7,7 +7,8 @@ const {
     getKhataById,
     updateKhata,
     deleteKhata,
-    addTransaction
+    addTransaction,
+    getTransactionsByKhata
 } = require("../controllers/khataController");
 
 
@@ -45,6 +46,8 @@ router.delete(
     idValidation,
     deleteKhata
 );
+
+router.get("/:id/transactions", idValidation, getTransactionsByKhata);
 
 router.put("/:id/transaction", addTransaction);
 
