@@ -40,20 +40,34 @@ const Invoice = () => {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
     const invoiceRef = useRef();
     const searchInputRef = useRef();
 
     const API_URL = "http://localhost:8080";
 
+    // Get current user from localStorage
     useEffect(() => {
-        fetchProducts();
-        fetchInvoices();
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        setCurrentUser(user);
     }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchProducts();
+            fetchInvoices();
+        }
+    }, [currentUser]);
 
     const fetchProducts = async () => {
         try {
             setLoadingProducts(true);
-            const response = await fetch(`${API_URL}/products`);
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${API_URL}/products`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
             const result = await response.json();
             if (response.ok) {
                 const formattedProducts = result.data.map((product) => ({
@@ -79,12 +93,27 @@ const Invoice = () => {
     const fetchInvoices = async () => {
         try {
             setLoadingInvoices(true);
-            const response = await fetch(`${API_URL}/invoices`);
+
+            const token = localStorage.getItem("token");
+
+            const response = await fetch(`${API_URL}/invoices`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
             const result = await response.json();
 
             if (response.ok) {
-                setInvoices(result.data || []);
+                console.log("Invoices from backend:", result.data);
+
+                // ❌ NO FILTERING HERE (backend already isolates user)
+                setInvoices(result.data);
+            } else {
+                handleError(result.message || "Failed to load invoices");
             }
+
         } catch (error) {
             console.error("Error fetching invoices:", error);
             handleError("Failed to load invoices");
@@ -264,6 +293,8 @@ const Invoice = () => {
             return;
         }
 
+        const token = localStorage.getItem("token");
+
         const invoiceData = {
             invoiceNumber,
             date: new Date().toISOString(),
@@ -277,13 +308,15 @@ const Invoice = () => {
             taxAmount,
             grandTotal,
             notes
+            
         };
 
         try {
             const response = await fetch(`${API_URL}/invoices`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(invoiceData)
             });
@@ -297,6 +330,7 @@ const Invoice = () => {
             } else {
                 handleError(result.message || "Failed to generate invoice");
             }
+
         } catch (error) {
             console.error(error);
             handleError("Failed to save invoice");

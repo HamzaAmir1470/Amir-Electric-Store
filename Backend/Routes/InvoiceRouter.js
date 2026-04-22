@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { invoiceValidation } = require("../Middlewares/AuthValidation");
-
+const ensureAuthenticated = require("../Middlewares/Auth");
 const {
     createInvoice,
     getAllInvoices,
@@ -11,12 +11,12 @@ const {
 
 
 // Create Invoice
-router.post("/", invoiceValidation, createInvoice);
+router.post("/",ensureAuthenticated, invoiceValidation, createInvoice);
 
 //  Get All
-router.get("/", getAllInvoices);
+router.get("/", ensureAuthenticated, getAllInvoices);
 
 //  Get One
-router.get("/:id", getInvoiceById);
+router.get("/:id", ensureAuthenticated, getInvoiceById);
 
 module.exports = router;

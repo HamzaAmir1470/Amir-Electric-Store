@@ -1,6 +1,6 @@
 const Invoice = require("../Modals/Invoice");
 
-// ➤ Create Invoice
+// ➤ Create Invoice (USER ISOLATED)
 const createInvoice = async (req, res) => {
     try {
         const {
@@ -33,6 +33,7 @@ const createInvoice = async (req, res) => {
         }
 
         const invoice = await Invoice.create({
+            userId: req.user._id,   // ✅ FIXED (correct field)
             invoiceNumber,
             date,
             customer,
@@ -61,10 +62,11 @@ const createInvoice = async (req, res) => {
 };
 
 
-// ➤ Get All Invoices
+// ➤ Get All Invoices (USER ISOLATED)
 const getAllInvoices = async (req, res) => {
     try {
-        const invoices = await Invoice.find().sort({ createdAt: -1 });
+        const invoices = await Invoice.find({ userId: req.user._id })
+            .sort({ createdAt: -1 });
 
         return res.status(200).json({
             message: "Invoices fetched successfully",
@@ -80,10 +82,13 @@ const getAllInvoices = async (req, res) => {
 };
 
 
-// ➤ Get Single Invoice
+// ➤ Get Single Invoice (SECURE)
 const getInvoiceById = async (req, res) => {
     try {
-        const invoice = await Invoice.findById(req.params.id);
+        const invoice = await Invoice.findOne({
+            _id: req.params.id,
+            userId: req.user._id
+        });
 
         if (!invoice) {
             return res.status(404).json({

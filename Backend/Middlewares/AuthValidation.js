@@ -219,7 +219,6 @@ const logoutValidation = (req, res, next) => {
     next();
 };
 
-module.exports = logoutValidation;
 
 module.exports = {
     signupValidation,

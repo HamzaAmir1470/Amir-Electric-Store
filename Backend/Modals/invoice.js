@@ -30,6 +30,12 @@ const invoiceItemSchema = new Schema(
 
 const invoiceSchema = new Schema(
     {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+
         invoiceNumber: {
             type: String,
             required: true,
