@@ -6,7 +6,8 @@ const {
     getSingleProduct,
     updateProduct,
     deleteProduct,
-    bulkUpdateProducts
+    bulkUpdateProducts,
+    getAllproducts
 } = require("../Controllers/ProductController");
 
 const {
@@ -31,7 +32,11 @@ router.get(
     auth,
     getProducts
 );
-
+router.get(
+    "/all",
+    // auth,
+    getAllproducts
+);
 
 router.put(
     "/bulk-update",

@@ -28,10 +28,14 @@ const Product = () => {
     const fetchProducts = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}/products`);
+            const response = await fetch(`${API_URL}/products/all`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
             const result = await response.json();
-
-            if (response.ok) {
+            if (response.ok && result.data) {
                 const formattedProducts = result.data.map((product) => ({
                     id: product._id,
                     name: product.name,

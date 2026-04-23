@@ -161,7 +161,7 @@ const invoiceValidation = (req, res, next) => {
     const schema = Joi.object({
         invoiceNumber: Joi.string().required(),
         date: Joi.date().optional(),
-        userId: Joi.string().hex().length(24).required(), 
+        // userId: Joi.string().hex().length(24).required(), 
         customer: Joi.object({
             name: Joi.string().required(),
             phone: Joi.string().allow(""),

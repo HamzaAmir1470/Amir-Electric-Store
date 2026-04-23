@@ -43,6 +43,31 @@ exports.createProduct = async (req, res) => {
     }
 };
 
+exports.getAllproducts = async (req, res) => {
+    try {
+            console.log("🔥 GET ALL PRODUCTS ROUTE HIT");
+        const products = await Product.find().sort({ createdAt: -1 });
+
+        console.log("TOTAL PRODUCTS:", await Product.countDocuments());
+        console.log("RETURNED:", products.length);
+
+        return res.status(200).json({
+            success: true,
+            count: products.length,
+            data: products
+        });
+
+    } catch (error) {
+        console.error("GET ALL PRODUCTS ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching products",
+            error: error.message
+        });
+    }
+};
+
 exports.getProducts = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -63,7 +88,6 @@ exports.getProducts = async (req, res) => {
         });
     }
 };
-
 
 exports.getSingleProduct = async (req, res) => {
     try {
