@@ -33,6 +33,7 @@ const loginValidation = (req, res, next) => {
 
 const productValidation = (req, res, next) => {
     const schema = Joi.object({
+        
         name: Joi.string().min(2).max(100).required(),
         purchasePrice: Joi.number().positive().required(),
         wholesalePrice: Joi.number().positive().optional(),

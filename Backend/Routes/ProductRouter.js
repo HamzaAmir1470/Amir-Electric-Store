@@ -1,4 +1,5 @@
 const router = require("express").Router();
+
 const {
     createProduct,
     getProducts,
@@ -8,19 +9,58 @@ const {
     bulkUpdateProducts
 } = require("../Controllers/ProductController");
 
-const { productValidation, updateProductValidation, bulkUpdateValidation } = require("../Middlewares/AuthValidation");
+const {
+    productValidation,
+    updateProductValidation,
+    bulkUpdateValidation,
+    idValidation
+} = require("../Middlewares/AuthValidation");
 
-// Create
-router.post("/", productValidation, createProduct);
+const auth = require("../Middlewares/auth");
 
-// Read
-router.get("/", getProducts);
-router.get("/:id", getSingleProduct);
+router.post(
+    "/",
+    auth,
+    productValidation,
+    createProduct
+);
 
-// Update
-router.put("/:id", updateProductValidation, updateProduct);
-router.put("/bulk-update", bulkUpdateValidation, bulkUpdateProducts);
-// Delete
-router.delete("/:id", deleteProduct);
+
+router.get(
+    "/",
+    auth,
+    getProducts
+);
+
+
+router.put(
+    "/bulk-update",
+    auth,
+    bulkUpdateValidation,
+    bulkUpdateProducts
+);
+
+
+router.get(
+    "/:id",
+    auth,
+    idValidation,
+    getSingleProduct
+);
+
+router.put(
+    "/:id",
+    auth,
+    idValidation,
+    updateProductValidation,
+    updateProduct
+);
+
+router.delete(
+    "/:id",
+    auth,
+    idValidation,
+    deleteProduct
+);
 
 module.exports = router;

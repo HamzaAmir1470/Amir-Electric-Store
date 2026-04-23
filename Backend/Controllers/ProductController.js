@@ -2,9 +2,20 @@ const Product = require('../Modals/Product');
 
 exports.createProduct = async (req, res) => {
     try {
-        const { name, purchasePrice, wholesalePrice, retailPrice, quantity, category, description, imageUrl } = req.body;
+        const userId = req.user._id;
+        const {
+            name,
+            purchasePrice,
+            wholesalePrice,
+            retailPrice,
+            quantity,
+            category,
+            description,
+            imageUrl
+        } = req.body;
 
         const product = new Product({
+            userId,
             name,
             purchasePrice,
             wholesalePrice,
@@ -32,10 +43,11 @@ exports.createProduct = async (req, res) => {
     }
 };
 
-
 exports.getProducts = async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
+        const userId = req.user.id;
+
+        const products = await Product.find({ userId }).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -55,7 +67,12 @@ exports.getProducts = async (req, res) => {
 
 exports.getSingleProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const userId = req.user.id;
+
+        const product = await Product.findOne({
+            _id: req.params.id,
+            userId
+        });
 
         if (!product) {
             return res.status(404).json({
@@ -80,16 +97,10 @@ exports.getSingleProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
     try {
+        const userId = req.user.id;
         const { id } = req.params;
 
-        const {
-            quantity,
-            purchasePrice,
-            wholesalePrice,
-            retailPrice
-        } = req.body;
-
-        const product = await Product.findById(id);
+        const product = await Product.findOne({ _id: id, userId });
 
         if (!product) {
             return res.status(404).json({
@@ -98,10 +109,22 @@ exports.updateProduct = async (req, res) => {
             });
         }
 
-        if (quantity !== undefined) product.quantity = quantity;
-        if (purchasePrice !== undefined) product.purchasePrice = purchasePrice;
-        if (wholesalePrice !== undefined) product.wholesalePrice = wholesalePrice;
-        if (retailPrice !== undefined) product.retailPrice = retailPrice;
+        const allowedFields = [
+            "quantity",
+            "purchasePrice",
+            "wholesalePrice",
+            "retailPrice",
+            "name",
+            "category",
+            "description",
+            "imageUrl"
+        ];
+
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                product[field] = req.body[field];
+            }
+        });
 
         const updatedProduct = await product.save();
 
@@ -122,6 +145,7 @@ exports.updateProduct = async (req, res) => {
 
 exports.bulkUpdateProducts = async (req, res) => {
     try {
+        const userId = req.user.id;
         const { productIds, quantity } = req.body;
 
         if (!productIds || !productIds.length) {
@@ -129,7 +153,10 @@ exports.bulkUpdateProducts = async (req, res) => {
         }
 
         await Product.updateMany(
-            { _id: { $in: productIds } },
+            {
+                _id: { $in: productIds },
+                userId // 🔥 SECURITY FIX
+            },
             { $set: { quantity } }
         );
 
@@ -149,7 +176,12 @@ exports.bulkUpdateProducts = async (req, res) => {
 
 exports.deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findByIdAndDelete(req.params.id);
+        const userId = req.user.id;
+
+        const product = await Product.findOneAndDelete({
+            _id: req.params.id,
+            userId
+        });
 
         if (!product) {
             return res.status(404).json({
