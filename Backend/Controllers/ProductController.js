@@ -45,7 +45,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         const products = await Product.find({ userId }).sort({ createdAt: -1 });
 
@@ -67,7 +67,7 @@ exports.getProducts = async (req, res) => {
 
 exports.getSingleProduct = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         const product = await Product.findOne({
             _id: req.params.id,
@@ -97,7 +97,7 @@ exports.getSingleProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
         const { id } = req.params;
 
         const product = await Product.findOne({ _id: id, userId });
@@ -145,7 +145,7 @@ exports.updateProduct = async (req, res) => {
 
 exports.bulkUpdateProducts = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
         const { productIds, quantity } = req.body;
 
         if (!productIds || !productIds.length) {
@@ -176,7 +176,7 @@ exports.bulkUpdateProducts = async (req, res) => {
 
 exports.deleteProduct = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         const product = await Product.findOneAndDelete({
             _id: req.params.id,

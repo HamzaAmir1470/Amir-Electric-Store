@@ -65,9 +65,14 @@ const Stock = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/products");
+      const response = await fetch("http://localhost:8080/products", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+      });
       const result = await response.json();
-
       if (!response.ok) {
         handleError(result.message || "Failed to fetch products");
       }
@@ -113,6 +118,7 @@ const Stock = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
           },
           body: JSON.stringify(updateData),
         }
@@ -140,6 +146,9 @@ const Stock = () => {
         `http://localhost:8080/products/${selectedProduct.id}`,
         {
           method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
         }
       );
 
