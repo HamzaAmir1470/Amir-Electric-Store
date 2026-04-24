@@ -4,7 +4,8 @@ import { useSettings } from "../components/SettingContext";
 import {
     FiUser, FiPhone, FiPackage, FiDollarSign, FiHash, FiPlus,
     FiTrash2, FiPrinter, FiCheckCircle, FiSave, FiEdit2, FiSearch,
-    FiX, FiToggleLeft, FiToggleRight, FiTag, FiClock, FiEye, FiRefreshCw, FiList
+    FiX, FiToggleLeft, FiToggleRight, FiTag, FiClock, FiEye, FiRefreshCw, FiList,
+    FiCreditCard, FiAlertTriangle, FiChevronDown  // Add this
 } from "react-icons/fi";
 import { ToastContainer } from "react-toastify";
 import { handleError, handleSuccess } from "../utils";
@@ -41,6 +42,16 @@ const Invoice = () => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
+
+    // Payment related states
+    const [paymentAmount, setPaymentAmount] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState("cash");
+    const [showPaymentSection, setShowPaymentSection] = useState(false);
+    const [paymentStatus, setPaymentStatus] = useState("full"); // full, partial
+    const [khataCustomers, setKhataCustomers] = useState([]);
+    const [existingKhata, setExistingKhata] = useState(null);
+    const [showKhataInfo, setShowKhataInfo] = useState(false);
+
     const invoiceRef = useRef();
     const searchInputRef = useRef();
 
@@ -56,8 +67,44 @@ const Invoice = () => {
         if (currentUser) {
             fetchProducts();
             fetchInvoices();
+            fetchKhataCustomers();
         }
     }, [currentUser]);
+
+    // Fetch khata customers
+    const fetchKhataCustomers = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${API_URL}/khata`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                setKhataCustomers(result.data || []);
+            }
+        } catch (error) {
+            console.error("Error fetching khata customers:", error);
+        }
+    };
+
+    // Check if customer exists in khata
+    useEffect(() => {
+        if (customer.phone) {
+            const existing = khataCustomers.find(k => k.phone === customer.phone);
+            if (existing) {
+                setExistingKhata(existing);
+                setShowKhataInfo(true);
+            } else {
+                setExistingKhata(null);
+                setShowKhataInfo(false);
+            }
+        } else {
+            setExistingKhata(null);
+            setShowKhataInfo(false);
+        }
+    }, [customer.phone, khataCustomers]);
 
     const fetchProducts = async () => {
         try {
@@ -93,27 +140,19 @@ const Invoice = () => {
     const fetchInvoices = async () => {
         try {
             setLoadingInvoices(true);
-
             const token = localStorage.getItem("token");
-
             const response = await fetch(`${API_URL}/invoices`, {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 }
             });
-
             const result = await response.json();
-
             if (response.ok) {
-                console.log("Invoices from backend:", result.data);
-
-                // ❌ NO FILTERING HERE (backend already isolates user)
                 setInvoices(result.data);
             } else {
                 handleError(result.message || "Failed to load invoices");
             }
-
         } catch (error) {
             console.error("Error fetching invoices:", error);
             handleError("Failed to load invoices");
@@ -287,13 +326,93 @@ const Invoice = () => {
     const taxAmount = ((subtotal - discountAmount) * tax) / 100;
     const grandTotal = subtotal - discountAmount + taxAmount;
 
+    // Update payment amount when grand total changes
+    useEffect(() => {
+        if (paymentStatus === "full") {
+            setPaymentAmount(grandTotal);
+        }
+    }, [grandTotal, paymentStatus]);
+
+    // Create or update khata entry
+    const updateKhata = async (paidAmount, remainingAmount, invoiceData) => {
+        try {
+            const token = localStorage.getItem("token");
+
+            if (remainingAmount > 0) {
+                // If customer has existing khata, update it
+                if (existingKhata) {
+                    const updatedBalance = existingKhata.balance + remainingAmount;
+                    const response = await fetch(`${API_URL}/khata/${existingKhata._id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            balance: updatedBalance,
+                            lastTransaction: {
+                                date: new Date().toISOString(),
+                                invoiceNumber: invoiceData.invoiceNumber,
+                                amount: remainingAmount,
+                                type: "debit",
+                                description: `Invoice ${invoiceData.invoiceNumber} - Partial payment received`
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        handleSuccess(`Remaining amount Rs. ${remainingAmount} added to Khata`);
+                    }
+                } else {
+                    // Create new khata entry
+                    const response = await fetch(`${API_URL}/khata`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            customerName: customer.name,
+                            phone: customer.phone,
+                            email: customer.email,
+                            address: customer.address,
+                            balance: remainingAmount,
+                            transactions: [{
+                                date: new Date().toISOString(),
+                                invoiceNumber: invoiceData.invoiceNumber,
+                                amount: remainingAmount,
+                                type: "debit",
+                                description: `Invoice ${invoiceData.invoiceNumber} - Partial payment received`
+                            }]
+                        })
+                    });
+
+                    if (response.ok) {
+                        handleSuccess(`New Khata created with remaining amount Rs. ${remainingAmount}`);
+                        fetchKhataCustomers(); // Refresh khata list
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error updating khata:", error);
+            handleError("Failed to update Khata records");
+        }
+    };
+
     const generateInvoice = async () => {
         if (!customer.name || items.length === 0) {
             handleError("Please add customer name and at least one item!");
             return;
         }
 
+        if (paymentAmount > grandTotal) {
+            handleError("Payment amount cannot exceed invoice total!");
+            return;
+        }
+
         const token = localStorage.getItem("token");
+        const remainingAmount = grandTotal - paymentAmount;
+        const isFullyPaid = remainingAmount === 0;
 
         const invoiceData = {
             invoiceNumber,
@@ -307,8 +426,14 @@ const Invoice = () => {
             tax,
             taxAmount,
             grandTotal,
-            notes
-            
+            notes,
+            payment: {
+                paidAmount: paymentAmount,
+                remainingAmount: remainingAmount,
+                paymentMethod: paymentMethod,
+                paymentStatus: isFullyPaid ? "paid" : "partial",
+                paymentDate: new Date().toISOString()
+            }
         };
 
         try {
@@ -324,7 +449,13 @@ const Invoice = () => {
             const result = await response.json();
 
             if (response.ok) {
-                handleSuccess("Invoice Generated Successfully!");
+                handleSuccess(`Invoice Generated Successfully! ${!isFullyPaid ? `Remaining amount Rs. ${remainingAmount} added to Khata.` : ""}`);
+
+                // Update khata for partial payments
+                if (!isFullyPaid) {
+                    await updateKhata(paymentAmount, remainingAmount, invoiceData);
+                }
+
                 await fetchInvoices();
                 resetForm();
             } else {
@@ -350,7 +481,13 @@ const Invoice = () => {
             tax,
             taxAmount,
             grandTotal,
-            notes
+            notes,
+            payment: {
+                paidAmount: paymentAmount,
+                remainingAmount: grandTotal - paymentAmount,
+                paymentMethod: paymentMethod,
+                paymentStatus: paymentAmount === grandTotal ? "paid" : "partial"
+            }
         };
 
         const printWindow = window.open('', '_blank');
@@ -431,6 +568,22 @@ const Invoice = () => {
                         font-weight: bold; 
                         color: #2563eb; 
                         margin-top: 10px;
+                    }
+                    .payment-info {
+                        margin-top: 20px;
+                        padding: 15px;
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 8px;
+                    }
+                    .payment-info h4 {
+                        margin: 0 0 10px 0;
+                        color: #166534;
+                    }
+                    .pending-payment {
+                        background: #fef3c7;
+                        border-color: #fde68a;
+                        color: #92400e;
                     }
                     .pricing-badge { 
                         display: inline-block; 
@@ -514,6 +667,13 @@ const Invoice = () => {
                         ${invoiceToPrint.tax > 0 ? `<div>Tax (${invoiceToPrint.tax}%): +${settings.currency} ${invoiceToPrint.taxAmount.toFixed(2)}</div>` : ''}
                         <div class="grand-total">Grand Total: ${settings.currency} ${invoiceToPrint.grandTotal.toFixed(2)}</div>
                     </div>
+                    <div class="payment-info ${invoiceToPrint.payment?.remainingAmount > 0 ? 'pending-payment' : ''}">
+                        <h4>Payment Information</h4>
+                        <div><strong>Payment Status:</strong> ${invoiceToPrint.payment?.paymentStatus === 'paid' ? '✓ Fully Paid' : '⚠ Partial Payment'}</div>
+                        <div><strong>Amount Paid:</strong> ${settings.currency} ${invoiceToPrint.payment?.paidAmount.toFixed(2)}</div>
+                        ${invoiceToPrint.payment?.remainingAmount > 0 ? `<div><strong>Remaining Balance:</strong> ${settings.currency} ${invoiceToPrint.payment.remainingAmount.toFixed(2)}</div>` : ''}
+                        <div><strong>Payment Method:</strong> ${invoiceToPrint.payment?.paymentMethod === 'cash' ? 'Cash' : invoiceToPrint.payment?.paymentMethod === 'bank' ? 'Bank Transfer' : 'Card'}</div>
+                    </div>
                     ${invoiceToPrint.notes ? `
                         <div style="margin-top: 30px;">
                             <strong>Notes:</strong><br/>
@@ -527,6 +687,7 @@ const Invoice = () => {
             </body>
         </html>
     `);
+        printWindow.document.close();
         printWindow.print();
         printWindow.close();
     };
@@ -542,6 +703,12 @@ const Invoice = () => {
         setSearchResults([]);
         setShowSearchDropdown(false);
         setPricingType("retail");
+        setPaymentAmount(grandTotal);
+        setPaymentMethod("cash");
+        setShowPaymentSection(false);
+        setPaymentStatus("full");
+        setExistingKhata(null);
+        setShowKhataInfo(false);
     };
 
     const formatDate = (dateString) => {
@@ -629,6 +796,31 @@ const Invoice = () => {
                             exit={{ opacity: 0, x: 20 }}
                             transition={{ duration: 0.3 }}
                         >
+                            {/* Khata Info Alert */}
+                            <AnimatePresence>
+                                {showKhataInfo && existingKhata && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <FiAlertTriangle className="text-yellow-600" />
+                                            <span className="text-sm text-yellow-800">
+                                                Customer has existing Khata balance: {settings.currency} {existingKhata.balance?.toFixed(2) || 0}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowKhataInfo(false)}
+                                            className="text-yellow-600 hover:text-yellow-800"
+                                        >
+                                            <FiX />
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             {/* Pricing Type Toggle */}
                             <motion.div
                                 variants={cardVariants}
@@ -915,6 +1107,132 @@ const Invoice = () => {
                                         </div>
                                     </motion.div>
 
+                                    {/* Payment Section */}
+                                    <motion.div
+                                        variants={cardVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        transition={{ delay: 0.25 }}
+                                        className="bg-white rounded-xl shadow-md overflow-hidden"
+                                    >
+                                        <motion.div
+                                            initial={{ x: -100 }}
+                                            animate={{ x: 0 }}
+                                            className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center cursor-pointer"
+                                            onClick={() => setShowPaymentSection(!showPaymentSection)}
+                                        >
+                                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                                <FiCreditCard />
+                                                Payment Information
+                                            </h2>
+                                            <motion.div
+                                                animate={{ rotate: showPaymentSection ? 180 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <FiChevronDown className="text-white" />
+                                            </motion.div>
+                                        </motion.div>
+
+                                        <AnimatePresence>
+                                            {showPaymentSection && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-6 space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Payment Status
+                                                            </label>
+                                                            <div className="flex gap-4">
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="full"
+                                                                        checked={paymentStatus === "full"}
+                                                                        onChange={(e) => {
+                                                                            setPaymentStatus(e.target.value);
+                                                                            setPaymentAmount(grandTotal);
+                                                                        }}
+                                                                        className="w-4 h-4 text-green-600"
+                                                                    />
+                                                                    <span>Full Payment</span>
+                                                                </label>
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="partial"
+                                                                        checked={paymentStatus === "partial"}
+                                                                        onChange={(e) => {
+                                                                            setPaymentStatus(e.target.value);
+                                                                            setPaymentAmount(0);
+                                                                        }}
+                                                                        className="w-4 h-4 text-yellow-600"
+                                                                    />
+                                                                    <span>Partial Payment (Add to Khata)</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Payment Amount
+                                                            </label>
+                                                            <div className="relative">
+                                                                <FiDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                <input
+                                                                    type="number"
+                                                                    value={paymentAmount}
+                                                                    onChange={(e) => {
+                                                                        const amount = parseFloat(e.target.value);
+                                                                        if (amount <= grandTotal) {
+                                                                            setPaymentAmount(amount);
+                                                                        } else {
+                                                                            handleError("Payment amount cannot exceed invoice total");
+                                                                        }
+                                                                    }}
+                                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                    placeholder="Enter payment amount"
+                                                                />
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Invoice Total: {settings.currency} {grandTotal.toFixed(2)} |
+                                                                Remaining: {settings.currency} {(grandTotal - paymentAmount).toFixed(2)}
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Payment Method
+                                                            </label>
+                                                            <select
+                                                                value={paymentMethod}
+                                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            >
+                                                                <option value="cash">Cash</option>
+                                                                <option value="bank">Bank Transfer</option>
+                                                                <option value="card">Card</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {paymentStatus === "partial" && (
+                                                            <div className="p-3 bg-yellow-50 rounded-lg">
+                                                                <p className="text-sm text-yellow-800">
+                                                                    <FiAlertTriangle className="inline mr-2" />
+                                                                    Remaining amount will be added to customer's Khata account
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+
                                     {/* Invoice Settings */}
                                     <motion.div
                                         variants={cardVariants}
@@ -1102,6 +1420,20 @@ const Invoice = () => {
                                                                 <span>Grand Total:</span>
                                                                 <span className="text-blue-600">{settings.currency} {grandTotal.toFixed(2)}</span>
                                                             </div>
+                                                            {showPaymentSection && paymentAmount > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between text-green-600">
+                                                                        <span>Amount Paid:</span>
+                                                                        <span>-{settings.currency} {paymentAmount.toFixed(2)}</span>
+                                                                    </div>
+                                                                    {paymentAmount < grandTotal && (
+                                                                        <div className="flex justify-between text-yellow-600 font-semibold">
+                                                                            <span>Remaining Balance:</span>
+                                                                            <span>{settings.currency} {(grandTotal - paymentAmount).toFixed(2)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </>
@@ -1143,7 +1475,7 @@ const Invoice = () => {
                             </div>
                         </motion.div>
                     ) : (
-                        // Invoice History Section
+                        // Invoice History Section (same as before)
                         <motion.div
                             key="invoice-history"
                             initial={{ opacity: 0, x: 20 }}
@@ -1210,7 +1542,7 @@ const Invoice = () => {
                                                         Amount
                                                     </th>
                                                     <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Type
+                                                        Status
                                                     </th>
                                                     <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Actions
@@ -1245,9 +1577,9 @@ const Invoice = () => {
                                                                 {settings.currency} {invoice.grandTotal.toFixed(2)}
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${invoice.pricingType === "retail" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
-                                                                    <FiTag className="text-xs" />
-                                                                    {invoice.pricingType === "retail" ? "Retail" : "Wholesale"}
+                                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${invoice.payment?.paymentStatus === 'paid' ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                                                                    {invoice.payment?.paymentStatus === 'paid' ? <FiCheckCircle className="text-xs" /> : <FiAlertTriangle className="text-xs" />}
+                                                                    {invoice.payment?.paymentStatus === 'paid' ? "Paid" : `Due: ${settings.currency} ${invoice.payment?.remainingAmount?.toFixed(2)}`}
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4">
@@ -1367,6 +1699,17 @@ const Invoice = () => {
                                         <p className="text-orange-600">Tax ({selectedInvoice.tax}%): +{settings.currency} {selectedInvoice.taxAmount.toFixed(2)}</p>
                                     )}
                                     <p className="text-xl font-bold text-blue-600">Grand Total: {settings.currency} {selectedInvoice.grandTotal.toFixed(2)}</p>
+
+                                    {selectedInvoice.payment && (
+                                        <div className="mt-4 pt-4 border-t">
+                                            <p className="font-semibold">Payment Information:</p>
+                                            <p>Amount Paid: {settings.currency} {selectedInvoice.payment.paidAmount?.toFixed(2)}</p>
+                                            {selectedInvoice.payment.remainingAmount > 0 && (
+                                                <p className="text-yellow-600">Remaining Balance: {settings.currency} {selectedInvoice.payment.remainingAmount.toFixed(2)}</p>
+                                            )}
+                                            <p>Payment Method: {selectedInvoice.payment.paymentMethod}</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {selectedInvoice.notes && (

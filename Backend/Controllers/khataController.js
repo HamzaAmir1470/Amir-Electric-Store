@@ -1,14 +1,13 @@
 const Khata = require("../Modals/Khata");
 const Transaction = require("../Modals/Transaction");
 
-
 const createKhata = async (req, res) => {
     try {
-        const { customerName, phoneNumber, openingBalance, remainingBalance, transactions } = req.body;
+        const { customerName, phoneNumber, email, address, openingBalance, remainingBalance, transactions } = req.body;
 
-        if (!customerName || !openingBalance || !phoneNumber) {
+        if (!customerName || !phoneNumber) {
             return res.status(400).json({
-                message: "Required fields are missing"
+                message: "Customer name and phone number are required"
             });
         }
 
@@ -16,8 +15,10 @@ const createKhata = async (req, res) => {
             userId: req.user._id,
             customerName,
             phoneNumber,
-            openingBalance,
-            remainingBalance,
+            email: email || "",
+            address: address || "",
+            openingBalance: openingBalance || 0,
+            remainingBalance: remainingBalance !== undefined ? remainingBalance : (openingBalance || 0),
             transactions: transactions || []
         });
 
@@ -27,7 +28,6 @@ const createKhata = async (req, res) => {
         });
 
     } catch (error) {
-        // Handle duplicate error properly
         if (error.code === 11000) {
             return res.status(409).json({
                 message: "Khata already exists for this phone number"
@@ -45,7 +45,7 @@ const createKhata = async (req, res) => {
 const getAllKhatas = async (req, res) => {
     try {
         const khatas = await Khata.find({
-            userId: req.user._id   // 🔥 IMPORTANT FIX
+            userId: req.user._id
         }).sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -61,14 +61,44 @@ const getAllKhatas = async (req, res) => {
     }
 };
 
+// ➤ GET KHATA BY PHONE NUMBER
+const getKhataByPhone = async (req, res) => {
+    try {
+        const { phone } = req.params;
+
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                message: "User not authenticated"
+            });
+        }
+
+        const khata = await Khata.findOne({
+            userId: req.user._id,
+            phoneNumber: phone
+        }).populate('transactions');
+
+        return res.status(200).json({
+            success: true,
+            data: khata
+        });
+
+    } catch (error) {
+        console.error("Get khata by phone error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
 
 // ➤ GET SINGLE KHATA (SECURE)
 const getKhataById = async (req, res) => {
     try {
         const khata = await Khata.findOne({
             _id: req.params.id,
-            userId: req.user._id   // 🔥 SECURITY FIX
-        });
+            userId: req.user._id
+        }).populate('transactions');
 
         if (!khata) {
             return res.status(404).json({
@@ -89,7 +119,6 @@ const getKhataById = async (req, res) => {
     }
 };
 
-
 // ➤ UPDATE KHATA (SECURE)
 const updateKhata = async (req, res) => {
     try {
@@ -104,7 +133,7 @@ const updateKhata = async (req, res) => {
             });
         }
 
-        const allowedFields = ["customerName", "phoneNumber", "openingBalance", "remainingBalance"];
+        const allowedFields = ["customerName", "phoneNumber", "email", "address", "openingBalance", "remainingBalance"];
         const updates = {};
 
         allowedFields.forEach(field => {
@@ -131,7 +160,6 @@ const updateKhata = async (req, res) => {
         });
     }
 };
-
 
 // ➤ DELETE KHATA (SECURE + CASCADE)
 const deleteKhata = async (req, res) => {
@@ -162,11 +190,10 @@ const deleteKhata = async (req, res) => {
     }
 };
 
-
 // ➤ ADD TRANSACTION (FIXED)
 const addTransaction = async (req, res) => {
     try {
-        const { amount, type, note } = req.body;
+        const { amount, type, note, invoiceNumber, paymentMethod } = req.body;
 
         const khata = await Khata.findOne({
             _id: req.params.id,
@@ -179,37 +206,50 @@ const addTransaction = async (req, res) => {
             });
         }
 
+        // Create enhanced note with invoice info if provided
+        let transactionNote = note || "";
+        if (invoiceNumber) {
+            transactionNote = `Invoice ${invoiceNumber} - ${transactionNote}`;
+        }
+
         const transaction = await Transaction.create({
             khata: khata._id,
             amount,
             type,
-            note
+            note: transactionNote,
+            date: new Date()
         });
 
         khata.transactions.push(transaction._id);
 
-        // optional: auto balance logic (safer)
+        // Update balance based on transaction type
         if (type === "payment") {
+            // Payment reduces the balance (customer paid)
             khata.remainingBalance -= amount;
-        } else {
+        } else if (type === "credit") {
+            // Credit increases the balance (customer owes more)
             khata.remainingBalance += amount;
         }
 
         await khata.save();
 
+        // Populate the transaction before sending response
+        const populatedTransaction = await Transaction.findById(transaction._id);
+
         return res.status(200).json({
             message: "Transaction added successfully",
-            transaction
+            transaction: populatedTransaction,
+            remainingBalance: khata.remainingBalance
         });
 
     } catch (error) {
+        console.error("Add transaction error:", error);
         return res.status(500).json({
             message: "Server error",
             error: error.message
         });
     }
 };
-
 
 // ➤ GET TRANSACTIONS (SECURE)
 const getTransactionsByKhata = async (req, res) => {
@@ -231,7 +271,8 @@ const getTransactionsByKhata = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            data: transactions
+            data: transactions,
+            balance: khata.remainingBalance
         });
 
     } catch (error) {
@@ -243,12 +284,12 @@ const getTransactionsByKhata = async (req, res) => {
     }
 };
 
-
 module.exports = {
     createKhata,
     getAllKhatas,
     getKhataById,
     updateKhata,
+    getKhataByPhone,
     deleteKhata,
     addTransaction,
     getTransactionsByKhata

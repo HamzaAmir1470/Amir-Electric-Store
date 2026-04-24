@@ -22,9 +22,23 @@ const khataSchema = new Schema(
             trim: true
         },
 
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: ""
+        },
+
+        address: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+
         openingBalance: {
             type: Number,
-            required: true
+            required: true,
+            default: 0
         },
 
         remainingBalance: {
@@ -44,6 +58,10 @@ const khataSchema = new Schema(
     }
 );
 
+// Compound index for unique user + phone number
 khataSchema.index({ userId: 1, phoneNumber: 1 }, { unique: true });
+
+// Index for searching by email
+khataSchema.index({ userId: 1, email: 1 });
 
 module.exports = mongoose.model("Khata", khataSchema);

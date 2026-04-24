@@ -20,7 +20,8 @@ import {
     FiEye,
     FiList,
     FiChevronDown,
-    FiChevronUp
+    FiChevronUp,
+    FiAlertTriangle
 } from "react-icons/fi";
 import { handleError } from "../utils";
 import { useNavigate } from "react-router-dom";
@@ -35,11 +36,13 @@ const AdminDashboard = () => {
         invoices: 0,
         lowStock: 0,
         outOfStock: 0,
-        totalCustomers: 0
+        totalCustomers: 0,
+        pendingPayments: 0
     });
     const [loading, setLoading] = useState(true);
     const [recentActivities, setRecentActivities] = useState([]);
     const [recentInvoices, setRecentInvoices] = useState([]);
+    const [allInvoices, setAllInvoices] = useState([]);
     const [lowStockProducts, setLowStockProducts] = useState([]);
     const [error, setError] = useState(null);
     const [showAllInvoices, setShowAllInvoices] = useState(false);
@@ -141,21 +144,32 @@ const AdminDashboard = () => {
 
             let invoicesData = [];
             let totalSales = 0;
+            let pendingCount = 0;
+
             if (invoicesRes.ok) {
                 const invoicesResult = await invoicesRes.json();
                 invoicesData = invoicesResult.data || [];
                 totalSales = invoicesData.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
 
+                // Calculate pending payments
+                pendingCount = invoicesData.filter(inv =>
+                    inv.payment?.paymentStatus === "partial" ||
+                    inv.payment?.remainingAmount > 0
+                ).length;
+
+                // Store all invoices
+                const sortedInvoices = invoicesData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setAllInvoices(sortedInvoices);
+
                 // Only show 3 most recent invoices initially
-                const recent = invoicesData
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    .slice(0, 3);
+                const recent = sortedInvoices.slice(0, 3);
                 setRecentInvoices(recent);
 
                 setStats(prev => ({
                     ...prev,
                     invoices: invoicesData.length,
-                    sales: totalSales
+                    sales: totalSales,
+                    pendingPayments: pendingCount
                 }));
             }
 
@@ -193,7 +207,7 @@ const AdminDashboard = () => {
             const result = await response.json();
             const invoices = result.data || [];
 
-            // Group by invoice
+            // Group by invoice with payment info
             const groupedInvoices = invoices.map((invoice) => {
                 const items = (invoice.items || []).map((item) => ({
                     product: item.product,
@@ -213,7 +227,10 @@ const AdminDashboard = () => {
                     customerName: invoice.customer?.name || "Walk-in Customer",
                     customerPhone: invoice.customer?.phone || "",
                     createdAt: invoice.createdAt,
-                    pricingType: invoice.pricingType
+                    pricingType: invoice.pricingType,
+                    paymentStatus: invoice.payment?.paymentStatus || "paid",
+                    remainingAmount: invoice.payment?.remainingAmount || 0,
+                    paidAmount: invoice.payment?.paidAmount || invoice.grandTotal
                 };
             });
 
@@ -252,9 +269,10 @@ const AdminDashboard = () => {
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 3);
         recentInvoicesList.forEach(invoice => {
+            const status = invoice.payment?.paymentStatus === "partial" ? " (Partial Payment)" : "";
             activities.push({
                 id: `invoice-${invoice._id}`,
-                message: `Invoice ${invoice.invoiceNumber} created - Rs. ${invoice.grandTotal.toFixed(2)}`,
+                message: `Invoice ${invoice.invoiceNumber} created - ${formatCurrency(invoice.grandTotal)}${status}`,
                 time: new Date(invoice.createdAt),
                 type: "invoice"
             });
@@ -347,7 +365,6 @@ const AdminDashboard = () => {
                         th { background-color: #4CAF50; color: white; font-size: 14px; }
                         td { font-size: 12px; }
                         .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; }
-                        .product-list { margin-top: 5px; font-size: 11px; color: #666; }
                         @media print {
                             button { display: none; }
                         }
@@ -374,7 +391,7 @@ const AdminDashboard = () => {
                     </div>
                     <table>
                         <thead>
-                            <tr><th>Invoice #</th><th>Products</th><th>Total Items</th><th>Amount</th><th>Customer</th></tr>
+                            <tr><th>Invoice #</th><th>Products</th><th>Total Items</th><th>Amount</th><th>Status</th><th>Customer</th></tr>
                         </thead>
                         <tbody>
                             ${dailySales.map(sale => `
@@ -385,6 +402,10 @@ const AdminDashboard = () => {
                                     </td>
                                     <td>${sale.totalItems}</td>
                                     <td>${formatCurrency(sale.totalAmount)}</td>
+                                    <td>
+                                        ${sale.paymentStatus === 'partial' ? '⚠ Partial' : '✓ Paid'}
+                                        ${sale.remainingAmount > 0 ? `<br/><small>Due: ${formatCurrency(sale.remainingAmount)}</small>` : ''}
+                                    </td>
                                     <td>${sale.customerName}</td>
                                 </tr>
                             `).join('')}
@@ -412,37 +433,15 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewAllInvoices = async () => {
-        try {
-            const response = await authFetch(`${API_URL}/invoices/all`);
-            if (response.ok) {
-                const result = await response.json();
-                const allInvoices = result.data || [];
-                const sortedInvoices = allInvoices.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setRecentInvoices(sortedInvoices);
-                setShowAllInvoices(true);
-            }
-        } catch (error) {
-            console.error("Error fetching all invoices:", error);
-            handleError("Failed to load all invoices");
-        }
+    const handleViewAllInvoices = () => {
+        setRecentInvoices(allInvoices);
+        setShowAllInvoices(true);
     };
 
-    const handleShowLessInvoices = async () => {
-        try {
-            const response = await authFetch(`${API_URL}/invoices/all`);
-            if (response.ok) {
-                const result = await response.json();
-                const allInvoices = result.data || [];
-                const recent = allInvoices
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    .slice(0, 3);
-                setRecentInvoices(recent);
-                setShowAllInvoices(false);
-            }
-        } catch (error) {
-            console.error("Error fetching invoices:", error);
-        }
+    const handleShowLessInvoices = () => {
+        const recent = allInvoices.slice(0, 3);
+        setRecentInvoices(recent);
+        setShowAllInvoices(false);
     };
 
     const StatCard = ({ title, value, icon, bgColor, iconColor, borderColor }) => (
@@ -458,6 +457,8 @@ const AdminDashboard = () => {
                     navigate("/products");
                 } else if (title === "Customers") {
                     navigate("/khata");
+                } else if (title === "Pending") {
+                    navigate("/invoices?status=partial");
                 }
             }}
         >
@@ -473,11 +474,6 @@ const AdminDashboard = () => {
         </motion.div>
     );
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-    };
 
     if (loading) {
         return (
@@ -533,17 +529,81 @@ const AdminDashboard = () => {
                             >
                                 <FiRefreshCw size={18} />
                             </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleLogout}
-                                className="px-4 py-2 bg-red-500 rounded-lg shadow-sm hover:shadow text-white transition-all text-sm font-medium"
-                            >
-                                Logout
-                            </motion.button>
                         </div>
                     </div>
                 </motion.div>
+
+                {/* Stats Grid - Row 1 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <StatCard
+                        title="Products"
+                        value={stats.products}
+                        icon={<FiPackage />}
+                        bgColor="bg-blue-50"
+                        iconColor="text-blue-500"
+                        borderColor="border-blue-100"
+                    />
+                    <StatCard
+                        title="Stock"
+                        value={stats.stock}
+                        icon={<FiBox />}
+                        bgColor="bg-green-50"
+                        iconColor="text-green-500"
+                        borderColor="border-green-100"
+                    />
+                    <StatCard
+                        title="Sales"
+                        value={formatCurrency(stats.sales)}
+                        icon={<FiDollarSign />}
+                        bgColor="bg-purple-50"
+                        iconColor="text-purple-500"
+                        borderColor="border-purple-100"
+                    />
+                    <StatCard
+                        title="Invoices"
+                        value={stats.invoices}
+                        icon={<FiFileText />}
+                        bgColor="bg-orange-50"
+                        iconColor="text-orange-500"
+                        borderColor="border-orange-100"
+                    />
+                </div>
+
+                {/* Stats Grid - Row 2 */}
+                <div className="grid grid-cols-4 gap-4 mb-8">
+                    <StatCard
+                        title="Low Stock"
+                        value={stats.lowStock}
+                        icon={<FiAlertCircle />}
+                        bgColor="bg-yellow-50"
+                        iconColor="text-yellow-600"
+                        borderColor="border-yellow-100"
+                    />
+                    <StatCard
+                        title="Out of Stock"
+                        value={stats.outOfStock}
+                        icon={<FiAlertCircle />}
+                        bgColor="bg-red-50"
+                        iconColor="text-red-500"
+                        borderColor="border-red-100"
+                    />
+                    <StatCard
+                        title="Customers"
+                        value={stats.totalCustomers}
+                        icon={<FiUsers />}
+                        bgColor="bg-indigo-50"
+                        iconColor="text-indigo-500"
+                        borderColor="border-indigo-100"
+                    />
+                    <StatCard
+                        title="Pending"
+                        value={stats.pendingPayments}
+                        icon={<FiAlertTriangle />}
+                        bgColor="bg-amber-50"
+                        iconColor="text-amber-500"
+                        borderColor="border-amber-100"
+                    />
+                </div>
 
                 {/* Daily Sales Panel */}
                 <motion.div
@@ -627,6 +687,7 @@ const AdminDashboard = () => {
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Products</th>
                                             <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Total Items</th>
                                             <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Total Amount</th>
+                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Status</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Customer</th>
                                             <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Actions</th>
                                         </tr>
@@ -672,6 +733,24 @@ const AdminDashboard = () => {
                                                         <td className="px-6 py-3 text-right font-semibold text-sm text-gray-800">
                                                             {formatCurrency(sale.totalAmount)}
                                                         </td>
+                                                        <td className="px-6 py-3 text-center">
+                                                            {sale.paymentStatus === "partial" ? (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                                                                        <FiAlertTriangle size={10} />
+                                                                        Partial
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-500">
+                                                                        Due: {formatCurrency(sale.remainingAmount)}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                                                    <FiCheckCircle size={10} />
+                                                                    Paid
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                         <td className="px-6 py-3">
                                                             <div className="text-sm font-medium text-gray-800">{sale.customerName}</div>
                                                             {sale.customerPhone && (
@@ -679,15 +758,13 @@ const AdminDashboard = () => {
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-3 text-center">
-                                                            <div className="flex gap-2 justify-center">
-                                                                <button
-                                                                    onClick={() => handleViewInvoice(sale.invoiceId)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
-                                                                >
-                                                                    <FiEye size={14} />
-                                                                    View Details
-                                                                </button>
-                                                            </div>
+                                                            <button
+                                                                onClick={() => handleViewInvoice(sale.invoiceId)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
+                                                            >
+                                                                <FiEye size={14} />
+                                                                View Details
+                                                            </button>
                                                         </td>
                                                     </motion.tr>
 
@@ -701,7 +778,7 @@ const AdminDashboard = () => {
                                                                 transition={{ duration: 0.3 }}
                                                                 className="bg-gray-50"
                                                             >
-                                                                <td colSpan="6" className="px-6 py-4">
+                                                                <td colSpan="7" className="px-6 py-4">
                                                                     <div className="space-y-2">
                                                                         <p className="font-semibold text-gray-700 text-sm mb-2">All Products:</p>
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -735,7 +812,7 @@ const AdminDashboard = () => {
                                             <td className="px-6 py-4 text-right font-bold text-lg text-blue-600">
                                                 {formatCurrency(dailyTotal)}
                                             </td>
-                                            <td colSpan="2"></td>
+                                            <td colSpan="3"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -743,70 +820,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </motion.div>
-
-                {/* Stats Grid - Row 1 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <StatCard
-                        title="Products"
-                        value={stats.products}
-                        icon={<FiPackage />}
-                        bgColor="bg-blue-50"
-                        iconColor="text-blue-500"
-                        borderColor="border-blue-100"
-                    />
-                    <StatCard
-                        title="Stock"
-                        value={stats.stock}
-                        icon={<FiBox />}
-                        bgColor="bg-green-50"
-                        iconColor="text-green-500"
-                        borderColor="border-green-100"
-                    />
-                    <StatCard
-                        title="Sales"
-                        value={formatCurrency(stats.sales)}
-                        icon={<FiDollarSign />}
-                        bgColor="bg-purple-50"
-                        iconColor="text-purple-500"
-                        borderColor="border-purple-100"
-                    />
-                    <StatCard
-                        title="Invoices"
-                        value={stats.invoices}
-                        icon={<FiFileText />}
-                        bgColor="bg-orange-50"
-                        iconColor="text-orange-500"
-                        borderColor="border-orange-100"
-                    />
-                </div>
-
-                {/* Stats Grid - Row 2 */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                    <StatCard
-                        title="Low Stock"
-                        value={stats.lowStock}
-                        icon={<FiAlertCircle />}
-                        bgColor="bg-yellow-50"
-                        iconColor="text-yellow-600"
-                        borderColor="border-yellow-100"
-                    />
-                    <StatCard
-                        title="Out of Stock"
-                        value={stats.outOfStock}
-                        icon={<FiAlertCircle />}
-                        bgColor="bg-red-50"
-                        iconColor="text-red-500"
-                        borderColor="border-red-100"
-                    />
-                    <StatCard
-                        title="Customers"
-                        value={stats.totalCustomers}
-                        icon={<FiUsers />}
-                        bgColor="bg-indigo-50"
-                        iconColor="text-indigo-500"
-                        borderColor="border-indigo-100"
-                    />
-                </div>
 
                 {/* Middle Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -933,51 +946,66 @@ const AdminDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {recentInvoices.slice(0, showAllInvoices ? recentInvoices.length : 3).map((invoice, idx) => (
-                                        <motion.tr
-                                            key={invoice._id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            whileHover={{ backgroundColor: '#F9FAFB' }}
-                                            className="cursor-pointer"
-                                        >
-                                            <td className="px-6 py-3 font-mono text-sm font-semibold text-gray-900">
-                                                {invoice.invoiceNumber}
-                                            </td>
-                                            <td className="px-6 py-3">
-                                                <div className="text-sm font-medium text-gray-900">{invoice.customer.name}</div>
-                                                {invoice.customer.phone && (
-                                                    <div className="text-xs text-gray-500">{invoice.customer.phone}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-3 text-sm text-gray-500">
-                                                {new Date(invoice.createdAt).toLocaleDateString('en-PK', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                })}
-                                            </td>
-                                            <td className="px-6 py-3 text-right font-semibold text-gray-900 text-sm">
-                                                {formatCurrency(invoice.grandTotal)}
-                                            </td>
-                                            <td className="px-6 py-3 text-center">
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                                    <FiCheckCircle size={12} />
-                                                    Paid
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-3 text-center">
-                                                <button
-                                                    onClick={() => handleViewInvoice(invoice._id)}
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
-                                                >
-                                                    <FiEye size={14} />
-                                                    View Details
-                                                </button>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
+                                    {recentInvoices.slice(0, showAllInvoices ? recentInvoices.length : 3).map((invoice, idx) => {
+                                        const isPartial = invoice.payment?.paymentStatus === "partial" || invoice.payment?.remainingAmount > 0;
+                                        return (
+                                            <motion.tr
+                                                key={invoice._id}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                                whileHover={{ backgroundColor: '#F9FAFB' }}
+                                                className="cursor-pointer"
+                                            >
+                                                <td className="px-6 py-3 font-mono text-sm font-semibold text-gray-900">
+                                                    {invoice.invoiceNumber}
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    <div className="text-sm font-medium text-gray-900">{invoice.customer.name}</div>
+                                                    {invoice.customer.phone && (
+                                                        <div className="text-xs text-gray-500">{invoice.customer.phone}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-3 text-sm text-gray-500">
+                                                    {new Date(invoice.createdAt).toLocaleDateString('en-PK', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-semibold text-gray-900 text-sm">
+                                                    {formatCurrency(invoice.grandTotal)}
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    {isPartial ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                                                                <FiAlertTriangle size={10} />
+                                                                Partial
+                                                            </span>
+                                                            <span className="text-xs text-gray-500">
+                                                                Due: {formatCurrency(invoice.payment?.remainingAmount || 0)}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                                            <FiCheckCircle size={10} />
+                                                            Paid
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <button
+                                                        onClick={() => handleViewInvoice(invoice._id)}
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
+                                                    >
+                                                        <FiEye size={14} />
+                                                        View Details
+                                                    </button>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

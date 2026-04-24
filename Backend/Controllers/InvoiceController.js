@@ -1,7 +1,9 @@
 // Controllers/InvoiceController.js
 const Invoice = require("../Modals/Invoice");
+const Khata = require("../Modals/Khata");
+const Transaction = require("../Modals/Transaction");
 
-// ➤ Create Invoice (USER ISOLATED)
+// ➤ Create Invoice (USER ISOLATED) with Payment and Khata support
 const createInvoice = async (req, res) => {
     try {
         const {
@@ -16,7 +18,8 @@ const createInvoice = async (req, res) => {
             tax,
             taxAmount,
             grandTotal,
-            notes
+            notes,
+            payment
         } = req.body;
 
         if (!customer?.name || !items || items.length === 0) {
@@ -25,7 +28,6 @@ const createInvoice = async (req, res) => {
             });
         }
 
-        // Check if user exists in request
         if (!req.user || !req.user._id) {
             return res.status(401).json({
                 message: "User not authenticated"
@@ -40,8 +42,18 @@ const createInvoice = async (req, res) => {
             });
         }
 
+        // Prepare payment data
+        const paymentData = payment || {
+            paidAmount: grandTotal,
+            remainingAmount: 0,
+            paymentMethod: "cash",
+            paymentStatus: "paid",
+            paymentDate: new Date()
+        };
+
+        // Create invoice
         const invoice = await Invoice.create({
-            userId: req.user._id,   // ✅ Use req.user._id consistently
+            userId: req.user._id,
             invoiceNumber,
             date: date || new Date(),
             customer,
@@ -53,12 +65,67 @@ const createInvoice = async (req, res) => {
             tax,
             taxAmount,
             grandTotal,
-            notes
+            notes,
+            payment: paymentData
         });
+
+        // Handle khata for partial payments
+        if (paymentData.paymentStatus === "partial" && paymentData.remainingAmount > 0) {
+            // Check if customer already exists in khata
+            let khataEntry = await Khata.findOne({
+                userId: req.user._id,
+                phoneNumber: customer.phone
+            });
+
+            if (khataEntry) {
+                // Update existing khata - Add transaction
+                const transaction = await Transaction.create({
+                    khata: khataEntry._id,
+                    amount: paymentData.remainingAmount,
+                    type: "credit", // Credit means customer owes money
+                    note: `Invoice ${invoiceNumber} - Partial payment. Remaining balance ${paymentData.remainingAmount} added.`,
+                    date: new Date()
+                });
+
+                // Add transaction to khata
+                khataEntry.transactions.push(transaction._id);
+                
+                // Update remaining balance
+                khataEntry.remainingBalance = (khataEntry.remainingBalance || 0) + paymentData.remainingAmount;
+                
+                await khataEntry.save();
+            } else {
+                // Create new khata entry
+                khataEntry = await Khata.create({
+                    userId: req.user._id,
+                    customerName: customer.name,
+                    phoneNumber: customer.phone,
+                    email: customer.email,
+                    address: customer.address,
+                    openingBalance: paymentData.remainingAmount,
+                    remainingBalance: paymentData.remainingAmount,
+                    transactions: []
+                });
+
+                // Create transaction
+                const transaction = await Transaction.create({
+                    khata: khataEntry._id,
+                    amount: paymentData.remainingAmount,
+                    type: "credit",
+                    note: `Invoice ${invoiceNumber} - Partial payment. Remaining balance ${paymentData.remainingAmount} added.`,
+                    date: new Date()
+                });
+
+                // Add transaction to khata
+                khataEntry.transactions.push(transaction._id);
+                await khataEntry.save();
+            }
+        }
 
         return res.status(201).json({
             message: "Invoice created successfully",
-            data: invoice
+            data: invoice,
+            khata: paymentData.paymentStatus === "partial" ? "Khata updated" : null
         });
 
     } catch (error) {
@@ -75,7 +142,6 @@ const getInvoicesByDate = async (req, res) => {
     try {
         const { date } = req.query;
 
-        // ✅ Fix: Use req.user._id consistently
         if (!req.user || !req.user._id) {
             return res.status(401).json({
                 success: false,
@@ -88,21 +154,12 @@ const getInvoicesByDate = async (req, res) => {
         if (date) {
             const startDate = new Date(date);
             startDate.setHours(0, 0, 0, 0);
-
             const endDate = new Date(date);
             endDate.setHours(23, 59, 59, 999);
-
-            query.createdAt = {
-                $gte: startDate,
-                $lte: endDate
-            };
-
-            console.log(`Fetching invoices for date range: ${startDate} to ${endDate}`);
+            query.createdAt = { $gte: startDate, $lte: endDate };
         }
 
         const invoices = await Invoice.find(query).sort({ createdAt: -1 });
-
-        console.log(`Found ${invoices.length} invoices for user ${req.user._id}`);
 
         res.status(200).json({
             success: true,
@@ -185,5 +242,5 @@ module.exports = {
     createInvoice,
     getAllInvoices,
     getInvoiceById,
-    getInvoicesByDate  
+    getInvoicesByDate
 };

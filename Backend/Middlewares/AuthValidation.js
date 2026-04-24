@@ -16,6 +16,7 @@ const signupValidation = (req, res, next) => {
 
     next();
 };
+
 const loginValidation = (req, res, next) => {
     const schema = Joi.object({
         email: Joi.string().email().required(),
@@ -33,7 +34,7 @@ const loginValidation = (req, res, next) => {
 
 const productValidation = (req, res, next) => {
     const schema = Joi.object({
-        
+
         name: Joi.string().min(2).max(100).required(),
         purchasePrice: Joi.number().positive().required(),
         wholesalePrice: Joi.number().positive().optional(),
@@ -85,7 +86,6 @@ const bulkUpdateValidation = (req, res, next) => {
     next();
 };
 
-
 // Create Khata Validation
 const createKhataValidation = (req, res, next) => {
     const schema = Joi.object({
@@ -93,11 +93,13 @@ const createKhataValidation = (req, res, next) => {
         phoneNumber: Joi.string()
             .pattern(/^[0-9]{10,15}$/)
             .allow("", null),
+        email: Joi.string().email().allow("", null),
+        address: Joi.string().max(200).allow("", null),
         openingBalance: Joi.number().required(),
-        remainingBalance: Joi.number().allow(null).required(),
+        remainingBalance: Joi.number().allow(null),
         transactions: Joi.array().items(
             Joi.object({
-                type: Joi.string().valid("payment", "purchase").required(),
+                type: Joi.string().valid("payment", "credit").required(),
                 amount: Joi.number().positive().required(),
                 date: Joi.date().required(),
                 note: Joi.string().max(200).allow(null)
@@ -116,12 +118,13 @@ const createKhataValidation = (req, res, next) => {
     next();
 };
 
-
-//  Update Khata Validation
+// Update Khata Validation
 const updateKhataValidation = (req, res, next) => {
     const schema = Joi.object({
         customerName: Joi.string().min(3).max(50),
         phoneNumber: Joi.string().pattern(/^[0-9]{10,15}$/).allow("", null),
+        email: Joi.string().email().allow("", null),
+        address: Joi.string().max(200).allow("", null),
         openingBalance: Joi.number(),
         remainingBalance: Joi.number().allow(null)
     });
@@ -137,8 +140,7 @@ const updateKhataValidation = (req, res, next) => {
     next();
 };
 
-
-//  ID Validation (optional but professional)
+// ID Validation (optional but professional)
 const idValidation = (req, res, next) => {
     const schema = Joi.object({
         id: Joi.string().hex().length(24).required()
@@ -155,13 +157,20 @@ const idValidation = (req, res, next) => {
     next();
 };
 
+// Payment Validation Schema
+const paymentValidation = Joi.object({
+    paidAmount: Joi.number().min(0).required(),
+    remainingAmount: Joi.number().min(0).required(),
+    paymentMethod: Joi.string().valid("cash", "bank", "card").default("cash"),
+    paymentStatus: Joi.string().valid("paid", "partial", "pending").default("paid"),
+    paymentDate: Joi.date().default(Date.now)
+});
 
-//  Invoice Validation
+// Invoice Validation with Payment
 const invoiceValidation = (req, res, next) => {
     const schema = Joi.object({
         invoiceNumber: Joi.string().required(),
         date: Joi.date().optional(),
-        // userId: Joi.string().hex().length(24).required(), 
         customer: Joi.object({
             name: Joi.string().required(),
             phone: Joi.string().allow(""),
@@ -185,12 +194,36 @@ const invoiceValidation = (req, res, next) => {
         pricingType: Joi.string().valid("retail", "wholesale"),
 
         subtotal: Joi.number().required(),
-        discount: Joi.number().min(0).max(100),
-        discountAmount: Joi.number(),
-        tax: Joi.number().min(0).max(100),
-        taxAmount: Joi.number(),
+        discount: Joi.number().min(0).max(100).default(0),
+        discountAmount: Joi.number().default(0),
+        tax: Joi.number().min(0).max(100).default(0),
+        taxAmount: Joi.number().default(0),
         grandTotal: Joi.number().required(),
-        notes: Joi.string().allow("")
+        notes: Joi.string().allow(""),
+
+        // Payment validation (optional, will use defaults if not provided)
+        payment: paymentValidation.optional()
+    });
+
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({
+            message: error.details[0].message
+        });
+    }
+
+    next();
+};
+
+// Transaction Validation
+const transactionValidation = (req, res, next) => {
+    const schema = Joi.object({
+        amount: Joi.number().positive().required(),
+        type: Joi.string().valid("payment", "credit").required(),
+        note: Joi.string().max(200).allow("", null),
+        invoiceNumber: Joi.string().optional(),
+        paymentMethod: Joi.string().valid("cash", "bank", "card").optional()
     });
 
     const { error } = schema.validate(req.body);
@@ -220,7 +253,6 @@ const logoutValidation = (req, res, next) => {
     next();
 };
 
-
 module.exports = {
     signupValidation,
     loginValidation,
@@ -231,5 +263,6 @@ module.exports = {
     updateKhataValidation,
     idValidation,
     invoiceValidation,
+    transactionValidation,
     logoutValidation
 };

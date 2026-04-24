@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiArrowLeft, FiPrinter, FiPackage, FiUser, FiCalendar, FiPhone, FiMapPin, FiTag } from "react-icons/fi";
+import { FiArrowLeft, FiPrinter, FiPackage, FiUser, FiCalendar, FiPhone, FiMapPin, FiTag, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { useSettings } from "../SettingContext";
 import { handleError } from "../../utils";
 
@@ -52,7 +52,13 @@ const InvoiceDetails = () => {
                     pricingType: item.pricingType || invoiceData.pricingType
                 })),
                 date: invoiceData.date || invoiceData.createdAt,
-                invoiceNumber: invoiceData.invoiceNumber
+                invoiceNumber: invoiceData.invoiceNumber,
+                payment: invoiceData.payment || {
+                    paidAmount: invoiceData.grandTotal,
+                    remainingAmount: 0,
+                    paymentMethod: "cash",
+                    paymentStatus: "paid"
+                }
             };
 
             setInvoice(formattedInvoice);
@@ -167,6 +173,24 @@ const InvoiceDetails = () => {
                             color: #2563eb; 
                             margin-top: 10px;
                         }
+                        .payment-info {
+                            margin-top: 20px;
+                            padding: 15px;
+                            background: #f0fdf4;
+                            border: 1px solid #bbf7d0;
+                            border-radius: 8px;
+                        }
+                        .payment-info.pending {
+                            background: #fef3c7;
+                            border-color: #fde68a;
+                        }
+                        .payment-info h4 {
+                            margin: 0 0 10px 0;
+                            color: #166534;
+                        }
+                        .payment-info.pending h4 {
+                            color: #92400e;
+                        }
                         .pricing-badge { 
                             display: inline-block; 
                             padding: 4px 12px; 
@@ -249,6 +273,13 @@ const InvoiceDetails = () => {
                             ${invoice.tax > 0 ? `<div>Tax (${invoice.tax}%): +${settings?.currency || 'Rs.'} ${invoice.taxAmount?.toFixed(2) || ((invoice.subtotal || invoice.grandTotal) * invoice.tax / 100).toFixed(2)}</div>` : ''}
                             <div class="grand-total">Grand Total: ${settings?.currency || 'Rs.'} ${invoice.grandTotal.toFixed(2)}</div>
                         </div>
+                        <div class="payment-info ${invoice.payment?.paymentStatus === 'partial' ? 'pending' : ''}">
+                            <h4>Payment Information</h4>
+                            <div><strong>Payment Status:</strong> ${invoice.payment?.paymentStatus === 'paid' ? '✓ Fully Paid' : '⚠ Partial Payment'}</div>
+                            <div><strong>Amount Paid:</strong> ${settings?.currency || 'Rs.'} ${invoice.payment?.paidAmount?.toFixed(2) || invoice.grandTotal.toFixed(2)}</div>
+                            ${invoice.payment?.remainingAmount > 0 ? `<div><strong>Remaining Balance:</strong> ${settings?.currency || 'Rs.'} ${invoice.payment.remainingAmount.toFixed(2)}</div>` : ''}
+                            <div><strong>Payment Method:</strong> ${invoice.payment?.paymentMethod === 'cash' ? 'Cash' : invoice.payment?.paymentMethod === 'bank' ? 'Bank Transfer' : 'Card'}</div>
+                        </div>
                         ${invoice.notes ? `
                             <div style="margin-top: 30px;">
                                 <strong>Notes:</strong><br/>
@@ -295,6 +326,8 @@ const InvoiceDetails = () => {
         );
     }
 
+    const isPartialPayment = invoice.payment?.paymentStatus === "partial" || invoice.payment?.remainingAmount > 0;
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-5xl mx-auto px-4">
@@ -323,9 +356,26 @@ const InvoiceDetails = () => {
                     className="bg-white rounded-lg shadow-lg overflow-hidden"
                 >
                     {/* Invoice Header */}
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                        <h1 className="text-2xl font-bold text-white">Invoice Details</h1>
-                        <p className="text-blue-100">Invoice #{invoice.invoiceNumber}</p>
+                    <div className={`px-6 py-4 ${isPartialPayment ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">Invoice Details</h1>
+                                <p className="text-white/90">Invoice #{invoice.invoiceNumber}</p>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${isPartialPayment ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                                {isPartialPayment ? (
+                                    <span className="flex items-center gap-1">
+                                        <FiAlertTriangle size={14} />
+                                        Partial Payment
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1">
+                                        <FiCheckCircle size={14} />
+                                        Fully Paid
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="p-6">
@@ -380,13 +430,46 @@ const InvoiceDetails = () => {
                                     </p>
                                     <p className="text-gray-700">
                                         <span className="font-medium">Status:</span>
-                                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                            Paid
+                                        <span className={`ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm ${isPartialPayment ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                                            {isPartialPayment ? <FiAlertTriangle size={12} /> : <FiCheckCircle size={12} />}
+                                            {isPartialPayment ? "Partial Payment" : "Paid"}
                                         </span>
                                     </p>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Payment Summary Card */}
+                        {isPartialPayment && (
+                            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                    <FiAlertTriangle />
+                                    Payment Summary
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <p className="text-sm text-amber-700">Total Amount</p>
+                                        <p className="text-lg font-bold text-amber-900">{formatCurrency(invoice.grandTotal)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-amber-700">Amount Paid</p>
+                                        <p className="text-lg font-bold text-green-600">{formatCurrency(invoice.payment?.paidAmount || 0)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-amber-700">Remaining Balance</p>
+                                        <p className="text-lg font-bold text-red-600">{formatCurrency(invoice.payment?.remainingAmount || 0)}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-2 pt-2 border-t border-amber-200">
+                                    <p className="text-sm text-amber-700">
+                                        <span className="font-medium">Payment Method:</span> {invoice.payment?.paymentMethod === 'cash' ? 'Cash' : invoice.payment?.paymentMethod === 'bank' ? 'Bank Transfer' : 'Card'}
+                                    </p>
+                                    <p className="text-sm text-amber-700">
+                                        <span className="font-medium">Payment Date:</span> {invoice.payment?.paymentDate ? formatDate(invoice.payment.paymentDate) : formatDate(invoice.date)}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Items Table */}
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -470,6 +553,26 @@ const InvoiceDetails = () => {
                                             {formatCurrency(invoice.grandTotal)}
                                         </td>
                                     </tr>
+                                    {isPartialPayment && (
+                                        <tr className="bg-amber-50">
+                                            <td colSpan="4" className="px-4 py-3 text-right font-bold text-base text-amber-800">
+                                                Amount Paid:
+                                            </td>
+                                            <td className="px-4 py-3 text-right font-bold text-green-600">
+                                                {formatCurrency(invoice.payment?.paidAmount || 0)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {isPartialPayment && invoice.payment?.remainingAmount > 0 && (
+                                        <tr className="bg-amber-50">
+                                            <td colSpan="4" className="px-4 py-3 text-right font-bold text-base text-amber-800">
+                                                Remaining Balance:
+                                            </td>
+                                            <td className="px-4 py-3 text-right font-bold text-red-600">
+                                                {formatCurrency(invoice.payment.remainingAmount)}
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tfoot>
                             </table>
                         </div>

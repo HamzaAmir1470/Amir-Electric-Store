@@ -8,7 +8,8 @@ const {
     updateKhata,
     deleteKhata,
     addTransaction,
-    getTransactionsByKhata
+    getTransactionsByKhata,
+    getKhataByPhone
 } = require("../controllers/khataController");
 
 
@@ -33,6 +34,8 @@ router.get("/", ensureAuthenticated, getAllKhatas);
 //  Get Single
 router.get("/:id", ensureAuthenticated, idValidation, getKhataById);
 
+// Add this route to your khata routes file
+router.get("/phone/:phone", ensureAuthenticated, getKhataByPhone);
 //  Update
 router.put(
     "/:id",

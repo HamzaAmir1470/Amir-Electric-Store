@@ -28,6 +28,35 @@ const invoiceItemSchema = new Schema(
     { _id: false }
 );
 
+// Payment schema
+const paymentSchema = new Schema(
+    {
+        paidAmount: {
+            type: Number,
+            default: 0
+        },
+        remainingAmount: {
+            type: Number,
+            default: 0
+        },
+        paymentMethod: {
+            type: String,
+            enum: ["cash", "bank", "card"],
+            default: "cash"
+        },
+        paymentStatus: {
+            type: String,
+            enum: ["paid", "partial", "pending"],
+            default: "paid"
+        },
+        paymentDate: {
+            type: Date,
+            default: Date.now
+        }
+    },
+    { _id: false }
+);
+
 const invoiceSchema = new Schema(
     {
         userId: {
@@ -41,7 +70,6 @@ const invoiceSchema = new Schema(
             required: true,
             unique: true
         },
-
         date: {
             type: Date,
             default: Date.now
@@ -95,6 +123,11 @@ const invoiceSchema = new Schema(
         notes: {
             type: String,
             default: ""
+        },
+
+        payment: {
+            type: paymentSchema,
+            default: () => ({})
         }
     },
     {

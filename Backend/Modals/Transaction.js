@@ -25,6 +25,17 @@ const transactionSchema = new Schema(
             default: ""
         },
 
+        invoiceNumber: {
+            type: String,
+            default: ""
+        },
+
+        paymentMethod: {
+            type: String,
+            enum: ["cash", "bank", "card"],
+            default: "cash"
+        },
+
         date: {
             type: Date,
             default: Date.now
@@ -34,5 +45,9 @@ const transactionSchema = new Schema(
         timestamps: true
     }
 );
+
+// Index for faster queries
+transactionSchema.index({ khata: 1, createdAt: -1 });
+transactionSchema.index({ invoiceNumber: 1 });
 
 module.exports = mongoose.model("Transaction", transactionSchema);
