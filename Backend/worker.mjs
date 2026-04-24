@@ -44,9 +44,7 @@ const {
 const Settings = require("./Modals/Setting");
 const contactRoutes = require("./Routes/contactRoutes");
 
-const CONTACT_HANDLER = contactRoutes.stack?.find(
-  (layer) => layer.route?.path === "/" && layer.route.methods?.post
-)?.route?.stack?.[0]?.handle;
+const contactHandler = contactRoutes.contactHandler;
 
 const parseAllowedOrigins = (value = "") =>
   value
@@ -182,14 +180,17 @@ const routes = [
     ],
   },
 
-  { method: "POST", path: "/contact", handlers: [CONTACT_HANDLER] },
+  { method: "POST", path: "/contact", handlers: [contactHandler] },
 ];
 
-const runHandlers = async ({ handlers, req, res }) => {
+const runHandlers = async ({ handlers, req, res, routePath }) => {
   for (let i = 0; i < handlers.length; i += 1) {
     const handler = handlers[i];
     if (typeof handler !== "function") {
-      return res.status(500).json({ success: false, message: "Route handler not configured" });
+      return res.status(500).json({
+        success: false,
+        message: `Route handler at index ${i} for path ${routePath} is not a function`,
+      });
     }
 
     let nextCalled = false;
@@ -293,7 +294,7 @@ export default {
 
     const params = matchRoute(route.path, url.pathname) || {};
     const { req, res } = await createExpressLikeReqRes(request, params);
-    const response = await runHandlers({ handlers: route.handlers, req, res });
+    const response = await runHandlers({ handlers: route.handlers, req, res, routePath: route.path });
 
     return applyCorsHeaders(response, origin, allowedOrigins);
   },
