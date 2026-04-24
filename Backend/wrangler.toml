@@ -1,0 +1,7 @@
+name = "amir-electric-store-backend"
+main = "worker.mjs"
+compatibility_date = "2026-04-24"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+CORS_ORIGINS = ""

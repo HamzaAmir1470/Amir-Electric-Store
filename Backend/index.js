@@ -9,10 +9,15 @@ const KhataRouter = require('./Routes/khataRouter');
 const InvoiceRouter = require('./Routes/InvoiceRouter');
 const SettingRouter = require('./Routes/SettingRouter');
 const contactRoutes = require('./Routes/contactRoutes');
-
-require('./Modals/db');
+const connectDB = require('./Modals/db');
 
 const PORT = process.env.PORT || 8080;
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+app.set("trust proxy", 1);
 
 app.get('/ping', (req, res) => {
     res.send('pong');
@@ -20,7 +25,14 @@ app.get('/ping', (req, res) => {
 
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+    },
+}));
 app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/khata', KhataRouter);
@@ -28,6 +40,13 @@ app.use('/invoices', InvoiceRouter);
 app.use('/settings', SettingRouter);
 app.use('/contact', contactRoutes);
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch((error) => {
+        console.error("Failed to start server:", error.message);
+        process.exit(1);
+    });

@@ -27,7 +27,7 @@ testEmailConnection();
 const sentEmails = new Map();
 
 // ---------------- ROUTE ----------------
-router.post('/', async (req, res) => {
+const contactHandler = async (req, res) => {
     const { name, email, message } = req.body;
 
     // Get IP for spam protection
@@ -120,6 +120,10 @@ router.post('/', async (req, res) => {
             message: "Failed to send message. Please try again."
         });
     }
-});
+};
+
+router.post('/', contactHandler);
+
+router.contactHandler = contactHandler;
 
 module.exports = router;

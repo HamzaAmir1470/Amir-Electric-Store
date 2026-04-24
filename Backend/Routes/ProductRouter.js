@@ -17,7 +17,7 @@ const {
     idValidation
 } = require("../Middlewares/AuthValidation");
 
-const auth = require("../Middlewares/auth");
+const auth = require("../Middlewares/Auth");
 
 router.post(
     "/",
