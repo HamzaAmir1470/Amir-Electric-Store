@@ -1,3 +1,4 @@
+// Controllers/InvoiceController.js
 const Invoice = require("../Modals/Invoice");
 
 // ➤ Create Invoice (USER ISOLATED)
@@ -24,6 +25,13 @@ const createInvoice = async (req, res) => {
             });
         }
 
+        // Check if user exists in request
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                message: "User not authenticated"
+            });
+        }
+
         const existingInvoice = await Invoice.findOne({ invoiceNumber });
 
         if (existingInvoice) {
@@ -33,9 +41,9 @@ const createInvoice = async (req, res) => {
         }
 
         const invoice = await Invoice.create({
-            userId: req.user._id,   // ✅ FIXED (correct field)
+            userId: req.user._id,   // ✅ Use req.user._id consistently
             invoiceNumber,
-            date,
+            date: date || new Date(),
             customer,
             items,
             pricingType,
@@ -54,6 +62,7 @@ const createInvoice = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("Create invoice error:", error);
         return res.status(500).json({
             message: "Server error",
             error: error.message
@@ -61,19 +70,76 @@ const createInvoice = async (req, res) => {
     }
 };
 
+// GET /invoices?date=2024-01-15 (Get invoices by date)
+const getInvoicesByDate = async (req, res) => {
+    try {
+        const { date } = req.query;
 
-// ➤ Get All Invoices (USER ISOLATED)
+        // ✅ Fix: Use req.user._id consistently
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                message: "User not authenticated"
+            });
+        }
+
+        let query = { userId: req.user._id };
+
+        if (date) {
+            const startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(date);
+            endDate.setHours(23, 59, 59, 999);
+
+            query.createdAt = {
+                $gte: startDate,
+                $lte: endDate
+            };
+
+            console.log(`Fetching invoices for date range: ${startDate} to ${endDate}`);
+        }
+
+        const invoices = await Invoice.find(query).sort({ createdAt: -1 });
+
+        console.log(`Found ${invoices.length} invoices for user ${req.user._id}`);
+
+        res.status(200).json({
+            success: true,
+            data: invoices,
+            count: invoices.length
+        });
+
+    } catch (error) {
+        console.error("Error fetching invoices by date:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// ➤ Get All Invoices (USER ISOLATED) - No date filter
 const getAllInvoices = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                message: "User not authenticated"
+            });
+        }
+
         const invoices = await Invoice.find({ userId: req.user._id })
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
             message: "Invoices fetched successfully",
-            data: invoices
+            data: invoices,
+            count: invoices.length
         });
 
     } catch (error) {
+        console.error("Get all invoices error:", error);
         return res.status(500).json({
             message: "Server error",
             error: error.message
@@ -81,10 +147,15 @@ const getAllInvoices = async (req, res) => {
     }
 };
 
-
 // ➤ Get Single Invoice (SECURE)
 const getInvoiceById = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                message: "User not authenticated"
+            });
+        }
+
         const invoice = await Invoice.findOne({
             _id: req.params.id,
             userId: req.user._id
@@ -102,6 +173,7 @@ const getInvoiceById = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("Get invoice by id error:", error);
         return res.status(500).json({
             message: "Server error",
             error: error.message
@@ -112,5 +184,6 @@ const getInvoiceById = async (req, res) => {
 module.exports = {
     createInvoice,
     getAllInvoices,
-    getInvoiceById
+    getInvoiceById,
+    getInvoicesByDate  
 };

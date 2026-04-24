@@ -18,6 +18,7 @@ import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute.jsx"
 import UserProfilePage from './components/Pages/UserProfilePage.jsx'
 import PublicRoute from "./ProtectedRoutes/PublicRoute.jsx"
 import AdminSettingpage from './components/Pages/AdminSettingpage.jsx'
+import InvoiceDetails from './components/Pages/InvoiceDetailsPage.jsx'
 
 function App() {
 
@@ -28,7 +29,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={
-              <About />
+            <About />
           } />
           <Route path="/products" element={
             <ProtectedRoute>
@@ -47,7 +48,7 @@ function App() {
           } />
           <Route path="/contact" element={
             // <ProtectedRoute>
-              <Contact />
+            <Contact />
             // </ProtectedRoute>
           } />
           <Route path="/login" element={
@@ -90,6 +91,12 @@ function App() {
               <AdminSettingpage />
             </AdminRoute>
           } />
+          <Route path="/invoice/:id" element={
+            <AdminRoute>
+              <InvoiceDetails />
+            </AdminRoute>
+          } />
+
           <Route path="/admin/invoice" element={
             <AdminRoute>
               <AdminInvoicePage />
