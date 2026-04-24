@@ -1186,16 +1186,32 @@ const Invoice = () => {
                                                                 <input
                                                                     type="number"
                                                                     value={paymentAmount}
+                                                                    placeholder="Enter payment amount"
                                                                     onChange={(e) => {
-                                                                        const amount = parseFloat(e.target.value);
-                                                                        if (amount <= grandTotal) {
-                                                                            setPaymentAmount(amount);
-                                                                        } else {
+                                                                        let value = e.target.value;
+
+                                                                        // Allow empty input
+                                                                        if (value === "") {
+                                                                            setPaymentAmount("");
+                                                                            return;
+                                                                        }
+
+                                                                        const amount = Number(value);
+
+                                                                        // Prevent invalid numbers
+                                                                        if (isNaN(amount) || amount < 0) {
+                                                                            handleError("Enter a valid positive number");
+                                                                            return;
+                                                                        }
+
+                                                                        // Allow typing but validate logically
+                                                                        if (amount > grandTotal) {
                                                                             handleError("Payment amount cannot exceed invoice total");
                                                                         }
+
+                                                                        setPaymentAmount(amount);
                                                                     }}
                                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                                    placeholder="Enter payment amount"
                                                                 />
                                                             </div>
                                                             <p className="text-xs text-gray-500 mt-1">
