@@ -10,7 +10,7 @@ const {
     addTransaction,
     getTransactionsByKhata,
     getKhataByPhone
-} = require("../controllers/khataController");
+} = require("../Controllers/khataController");
 
 
 const {
