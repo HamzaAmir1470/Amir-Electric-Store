@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amirelectricstore",
+  "compatibility_date": "2026-04-29",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "FrontEnd"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
