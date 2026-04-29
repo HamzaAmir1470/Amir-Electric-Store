@@ -161,16 +161,42 @@ const Invoice = () => {
         }
     };
 
-    const handleCustomer = (e) => {
-        setCustomer({
-            ...customer,
-            [e.target.name]: e.target.value
-        });
-        if (errors[e.target.name]) {
-            setErrors({ ...errors, [e.target.name]: "" });
+    const normalizePhone = (phone) => {
+        let cleaned = phone.replace(/\D/g, "");
+
+        if (cleaned.startsWith("92")) {
+            cleaned = "0" + cleaned.slice(2);
         }
+
+        if (!cleaned.startsWith("0")) {
+            cleaned = "0" + cleaned;
+        }
+
+        return cleaned;
     };
 
+    const normalizedPhone = normalizePhone(customer.phone);
+    const handleCustomer = (e) => {
+        const { name, value } = e.target;
+
+        let updatedValue = value;
+
+        if (name === "phone") {
+            updatedValue = normalizePhone(value);
+        }
+
+        setCustomer((prev) => ({
+            ...prev,
+            [name]: updatedValue
+        }));
+
+        if (errors[name]) {
+            setErrors((prev) => ({
+                ...prev,
+                [name]: ""
+            }));
+        }
+    };
     const handleItem = (e) => {
         const { name, value } = e.target;
         setItem({
@@ -373,7 +399,7 @@ const Invoice = () => {
                         },
                         body: JSON.stringify({
                             customerName: customer.name,
-                            phone: customer.phone,
+                            phone: normalizedPhone || "",
                             email: customer.email,
                             address: customer.address,
                             balance: remainingAmount,
@@ -917,7 +943,7 @@ const Invoice = () => {
                                                     <input
                                                         type="text"
                                                         name="phone"
-                                                        placeholder="+92 XXX XXXXXXX"
+                                                        placeholder="XXXX XXXXXXX"
                                                         value={customer.phone}
                                                         onChange={handleCustomer}
                                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

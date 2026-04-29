@@ -3,7 +3,14 @@ const Transaction = require("../Modals/Transaction");
 
 const createKhata = async (req, res) => {
     try {
-        const { customerName, phoneNumber, email, address, openingBalance, remainingBalance, transactions } = req.body;
+        const {
+            customerName,
+            phoneNumber,
+            email,
+            address,
+            openingBalance,
+            transactions = []
+        } = req.body;
 
         if (!customerName || !phoneNumber) {
             return res.status(400).json({
@@ -11,29 +18,46 @@ const createKhata = async (req, res) => {
             });
         }
 
-        const khata = await Khata.create({
-            userId: req.user._id,
-            customerName,
-            phoneNumber,
-            email: email || "",
-            address: address || "",
-            openingBalance: openingBalance || 0,
-            remainingBalance: remainingBalance !== undefined ? remainingBalance : (openingBalance || 0),
-            transactions: transactions || []
-        });
+        // Calculate transaction impact
+        const transactionTotal = transactions.reduce((sum, tx) => {
+            if (tx.type === "debit") return sum + tx.amount;
+            if (tx.type === "credit") return sum - tx.amount;
+            return sum;
+        }, 0);
 
-        return res.status(201).json({
-            message: "Khata created successfully",
+        const khata = await Khata.findOneAndUpdate(
+            {
+                userId: req.user._id,
+                phoneNumber: phoneNumber
+            },
+            {
+                $set: {
+                    customerName,
+                    email: email || "",
+                    address: address || ""
+                },
+                $setOnInsert: {
+                    openingBalance: openingBalance || 0
+                },
+                $push: {
+                    transactions: { $each: transactions }
+                },
+                $inc: {
+                    remainingBalance: transactionTotal + (openingBalance || 0)
+                }
+            },
+            {
+                returnDocument: "after",
+                upsert: true
+            }
+        );
+
+        return res.status(200).json({
+            message: "Khata created or updated with ledger entry",
             data: khata
         });
 
     } catch (error) {
-        if (error.code === 11000) {
-            return res.status(409).json({
-                message: "Khata already exists for this phone number"
-            });
-        }
-
         return res.status(500).json({
             message: "Server error",
             error: error.message
@@ -145,7 +169,7 @@ const updateKhata = async (req, res) => {
         const updatedKhata = await Khata.findByIdAndUpdate(
             khata._id,
             { $set: updates },
-            { new: true }
+            { returnDocument: "after" }
         );
 
         return res.status(200).json({

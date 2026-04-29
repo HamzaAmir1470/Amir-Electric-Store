@@ -108,6 +108,20 @@ const Khata = () => {
         });
     };
 
+    const normalizePhone = (phone) => {
+        let cleaned = phone.replace(/\D/g, "");
+
+        if (cleaned.startsWith("92")) {
+            cleaned = "0" + cleaned.slice(2);
+        }
+
+        if (!cleaned.startsWith("0")) {
+            cleaned = "0" + cleaned;
+        }
+
+        return cleaned;
+    };
+
     const addCustomer = async (e) => {
         e.preventDefault();
 
@@ -116,39 +130,82 @@ const Khata = () => {
             return;
         }
 
-        try {
-            const newKhata = {
-                customerName: form.customerName,
-                phoneNumber: form.phoneNumber,
-                openingBalance: Number(form.openingBalance) || 0,
-                remainingBalance: Number(form.openingBalance) || 0
-            };
+        const normalizedPhone = normalizePhone(form.phoneNumber);
 
-            const res = await fetch(`${API}/khata`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...getAuthHeader()
-                },
-                body: JSON.stringify(newKhata)
+        try {
+            const existingCustomer = customers.find(
+                (c) => c.phoneNumber === normalizedPhone
+            );
+
+            if (existingCustomer) {
+                const res = await fetch(`${API}/khata/${existingCustomer._id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...getAuthHeader()
+                    },
+                    body: JSON.stringify({
+                        customerName: form.customerName,
+                        phoneNumber: normalizedPhone,
+                        // optionally update balance if needed
+                        remainingBalance:
+                            existingCustomer.remainingBalance +
+                            (Number(form.openingBalance) || 0)
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const updatedCustomers = customers.map((c) =>
+                        c._id === existingCustomer._id
+                            ? { ...c, ...data.data }
+                            : c
+                    );
+
+                    setCustomers(updatedCustomers);
+
+                    handleSuccess("Existing customer updated instead of creating duplicate!");
+                } else {
+                    handleError(data.message || "Error updating customer");
+                }
+            } else {
+                const newKhata = {
+                    customerName: form.customerName,
+                    phoneNumber: normalizedPhone,
+                    openingBalance: Number(form.openingBalance) || 0,
+                    remainingBalance: Number(form.openingBalance) || 0
+                };
+
+                const res = await fetch(`${API}/khata`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...getAuthHeader()
+                    },
+                    body: JSON.stringify(newKhata)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    setCustomers([{ ...data.data, transactions: [] }, ...customers]);
+                    handleSuccess("New Khata created!");
+                } else {
+                    handleError(data.message || "Error creating khata");
+                }
+            }
+
+            // Reset form
+            setForm({
+                customerName: "",
+                phoneNumber: "",
+                openingBalance: ""
             });
 
-            const data = await res.json();
-
-            if (res.ok) {
-                setCustomers([{ ...data.data, transactions: [] }, ...customers]);
-                setForm({
-                    customerName: "",
-                    phoneNumber: "",
-                    openingBalance: ""
-                });
-                handleSuccess("Khata added successfully!");
-            } else {
-                handleError(data.message || "Error creating khata");
-            }
         } catch (error) {
             console.log(error);
-            handleError("Server error while creating khata");
+            handleError("Server error while processing khata");
         }
     };
 
