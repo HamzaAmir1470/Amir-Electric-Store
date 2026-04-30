@@ -45,11 +45,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getAllproducts = async (req, res) => {
     try {
-            console.log("🔥 GET ALL PRODUCTS ROUTE HIT");
         const products = await Product.find().sort({ createdAt: -1 });
-
-        console.log("TOTAL PRODUCTS:", await Product.countDocuments());
-        console.log("RETURNED:", products.length);
 
         return res.status(200).json({
             success: true,
@@ -58,7 +54,6 @@ exports.getAllproducts = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("GET ALL PRODUCTS ERROR:", error);
 
         return res.status(500).json({
             success: false,
