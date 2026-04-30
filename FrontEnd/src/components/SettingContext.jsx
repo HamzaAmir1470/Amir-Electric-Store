@@ -36,7 +36,7 @@ export const SettingsProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('Error fetching settings:', error);
-            handleError('Failed to load company settings');
+            // handleError('Failed to load company settings');
         } finally {
             setLoading(false);
         }
@@ -61,7 +61,7 @@ export const SettingsProvider = ({ children }) => {
             return false;
         } catch (error) {
             console.error('Error updating settings:', error);
-            handleError('Failed to update settings');
+            // handleError('Failed to update settings');
             return false;
         }
     };
