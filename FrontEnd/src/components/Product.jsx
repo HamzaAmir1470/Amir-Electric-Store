@@ -5,6 +5,7 @@ import Footer from "./Footer";
 import ProductCard from "./ProductCard";
 import { FiSearch, FiFilter, FiRefreshCw, FiAlertCircle, FiPackage, FiShield } from "react-icons/fi";
 import { handleError } from "../utils";
+import API_URL from "../config";
 
 const Product = () => {
     const [products, setProducts] = useState([]);
@@ -16,7 +17,7 @@ const Product = () => {
     const [userRole, setUserRole] = useState(null);
     const [showWholesale, setShowWholesale] = useState(false);
 
-    const API_URL = "http://localhost:8080";
+    // API_URL from src/config.js (Vite env `VITE_API_URL` or localhost fallback)
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");

@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { handleError, handleSuccess } from '../utils';
 import { ToastContainer } from 'react-toastify';
 const SettingsContext = createContext();
+import API_URL from "../config";
 
 export const useSettings = () => {
     const context = useContext(SettingsContext);
@@ -26,7 +27,8 @@ export const SettingsProvider = ({ children }) => {
 
     const fetchSettings = async () => {
         try {
-            const response = await fetch('http://localhost:8080/settings');
+
+            const response = await fetch(`${API_URL}/settings`);
             const result = await response.json();
 
             if (result.success) {
@@ -42,7 +44,7 @@ export const SettingsProvider = ({ children }) => {
 
     const updateSettings = async (newSettings) => {
         try {
-            const response = await fetch('http://localhost:8080/settings', {
+            const response = await fetch(`${API_URL}/settings`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'

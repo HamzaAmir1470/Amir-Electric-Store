@@ -24,6 +24,7 @@ import {
     FiAlertTriangle
 } from "react-icons/fi";
 import { handleError } from "../utils";
+import API_URL from "../config";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
@@ -58,7 +59,7 @@ const AdminDashboard = () => {
     });
     const [expandedInvoice, setExpandedInvoice] = useState(null);
 
-    const API_URL = "http://localhost:8080";
+    // API_URL is read from Vite env `VITE_API_URL` via src/config.js
 
     // Helper function to get auth headers
     const getAuthHeaders = () => {

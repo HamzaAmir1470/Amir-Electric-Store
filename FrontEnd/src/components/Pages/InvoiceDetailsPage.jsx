@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FiArrowLeft, FiPrinter, FiPackage, FiUser, FiCalendar, FiPhone, FiMapPin, FiTag, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { useSettings } from "../SettingContext";
 import { handleError } from "../../utils";
+import API_URL from "../../config";
 
 const InvoiceDetails = () => {
     const { id } = useParams();
@@ -12,7 +13,7 @@ const InvoiceDetails = () => {
     const { settings, loading: settingsLoading } = useSettings();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
-    const API_URL = "http://localhost:8080";
+    // API_URL from src/config.js (Vite env `VITE_API_URL` or localhost fallback)
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');

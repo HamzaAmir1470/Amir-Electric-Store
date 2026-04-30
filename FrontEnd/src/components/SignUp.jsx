@@ -2,6 +2,8 @@ import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import { handleError, handleSuccess } from "../utils";
 import { ToastContainer } from "react-toastify";
+import API_URL from "../config";
+
 const SignUp = () => {
     const [signupInfo, setSignupInfo] = React.useState({
         name: "",
@@ -11,7 +13,7 @@ const SignUp = () => {
     });
     const handleChange = (e) => {
         const { name, value } = e.target;
-        console.log(name, value);
+        // console.log(name, value);
         const copySignupInfo = { ...signupInfo };
         copySignupInfo[name] = value;
         setSignupInfo(copySignupInfo);
@@ -33,7 +35,8 @@ const SignUp = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:8080/auth/signup", {
+
+            const response = await fetch(`${API_URL}/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -67,7 +70,7 @@ const SignUp = () => {
                 handleSuccess(data?.message || "Sign up successful!");
                 setTimeout(() => {
                     window.location.href = "/login";
-                },1000);
+                }, 1000);
             }
         } catch (error) {
             console.error("Signup Error:", error);

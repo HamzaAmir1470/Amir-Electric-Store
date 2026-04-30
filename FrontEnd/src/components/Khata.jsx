@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import API_URL from "../config";
 import {
     FiUsers,
     FiUserPlus,
@@ -48,7 +49,9 @@ const Khata = () => {
         openingBalance: ""
     });
 
-    const API = "http://localhost:8080";
+
+    // use API_URL from config
+    const API = API_URL;
 
     const getAuthHeader = () => {
         const token = localStorage.getItem("token");

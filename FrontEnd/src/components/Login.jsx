@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { handleError, handleSuccess } from "../utils";
+import API_URL from "../config";
 
 const Login = () => {
     const [role, setRole] = React.useState("user");
@@ -29,7 +30,8 @@ const Login = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:8080/auth/login", {
+
+            const response = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

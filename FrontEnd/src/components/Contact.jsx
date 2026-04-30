@@ -5,6 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { jwtDecode } from "jwt-decode";
 import { useSettings } from "../components/SettingContext"; // Adjust the path as needed
+import API_URL from "../config";
 
 const Contact = () => {
     const navigate = useNavigate();
@@ -58,6 +59,7 @@ const Contact = () => {
         });
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -71,7 +73,7 @@ const Contact = () => {
         setErrorMessage("");
 
         try {
-            const response = await fetch("http://localhost:8080/contact", {
+            const response = await fetch(`${API_URL}/contact`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -403,8 +405,8 @@ const Contact = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 className={`w-full py-2 rounded-lg transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isAuthenticated
-                                        ? "bg-blue-500 text-white hover:bg-blue-600"
-                                        : "bg-gray-400 text-white cursor-pointer hover:bg-gray-500"
+                                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                                    : "bg-gray-400 text-white cursor-pointer hover:bg-gray-500"
                                     }`}
                             >
                                 {isSubmitting ? (

@@ -23,6 +23,7 @@ import {
   FiShoppingBag
 } from 'react-icons/fi';
 import { handleError, handleSuccess } from '../utils';
+import API_URL from "../config";
 
 const Stock = () => {
   const [products, setProducts] = useState([]);
@@ -65,7 +66,7 @@ const Stock = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/products", {
+      const response = await fetch(`${API_URL}/products`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -113,7 +114,7 @@ const Stock = () => {
       };
 
       const response = await fetch(
-        `http://localhost:8080/products/${selectedProduct.id}`,
+        `${API_URL}/products/${selectedProduct.id}`,
         {
           method: "PUT",
           headers: {
@@ -143,7 +144,7 @@ const Stock = () => {
   const handleDeleteProduct = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8080/products/${selectedProduct.id}`,
+        `${API_URL}/products/${selectedProduct.id}`,
         {
           method: "DELETE",
           headers: {
@@ -216,7 +217,7 @@ const Stock = () => {
 
     try {
       const updatePromises = selectedProducts.map(productId => {
-        return fetch(`http://localhost:8080/products/${productId}`, {
+        return fetch(`${API_URL}/products/${productId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

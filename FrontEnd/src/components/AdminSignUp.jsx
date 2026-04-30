@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { handleError, handleSuccess } from "../utils";
 import { ToastContainer } from "react-toastify";
+import API_URL from "../config";
 
 const AdminSignUp = () => {
 
@@ -24,6 +25,7 @@ const AdminSignUp = () => {
         }));
     };
 
+
     const handleSignUp = async (e) => {
         e.preventDefault();
 
@@ -41,7 +43,7 @@ const AdminSignUp = () => {
         try {
             setLoading(true);
 
-            const response = await fetch("http://localhost:8080/auth/signup", {
+            const response = await fetch(`${API_URL}/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -50,7 +52,7 @@ const AdminSignUp = () => {
                     name,
                     email,
                     password,
-                    role  
+                    role
                 }),
             });
 

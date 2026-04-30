@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     FiUser,
     FiMail,
@@ -9,6 +9,7 @@ import {
     FiCamera
 } from 'react-icons/fi';
 import { handleSuccess, handleError } from '../utils';
+import API_URL from "../config";
 import { ToastContainer } from 'react-toastify';
 
 
@@ -35,7 +36,7 @@ const Profile = () => {
     });
     const [passwordErrors, setPasswordErrors] = useState({});
 
-    const API_URL = "http://localhost:8080";
+    // API_URL from src/config.js (Vite env `VITE_API_URL` or localhost fallback)
 
     const hasFetched = React.useRef(false);
 

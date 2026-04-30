@@ -47,3 +47,15 @@ coverage/
 *.tmp
 *.temp
 *.cache 
+*.config.js
+*.config.json
+*.eslint*
+*.prettier**
+*.stylelint*
+*.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace    
+*.env.*.local
+*.env.*.example

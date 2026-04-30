@@ -7,6 +7,8 @@ import {
 } from "react-icons/fi";
 import { ToastContainer } from 'react-toastify';
 import { handleError, handleSuccess } from "../utils";
+import API_URL from "../config";
+
 
 const AdminAddProduct = () => {
     const [product, setProduct] = useState({
@@ -99,6 +101,7 @@ const AdminAddProduct = () => {
         return { wholesaleMargin, retailMargin, wholesaleToRetailMargin };
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -109,7 +112,7 @@ const AdminAddProduct = () => {
 
             const token = localStorage.getItem("token");
 
-            const response = await fetch("http://localhost:8080/products", {
+            const response = await fetch(`${API_URL}/products`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

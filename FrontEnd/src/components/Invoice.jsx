@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import { ToastContainer } from "react-toastify";
 import { handleError, handleSuccess } from "../utils";
+import API_URL from "../config";
 
 const Invoice = () => {
     const { settings, loading: settingsLoading } = useSettings();
@@ -55,7 +56,7 @@ const Invoice = () => {
     const invoiceRef = useRef();
     const searchInputRef = useRef();
 
-    const API_URL = "http://localhost:8080";
+    // API_URL from src/config.js (Vite env `VITE_API_URL` or localhost fallback)
 
     // Get current user from localStorage
     useEffect(() => {
