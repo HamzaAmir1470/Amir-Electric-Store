@@ -32,9 +32,7 @@ function App() {
             <About />
           } />
           <Route path="/products" element={
-            <ProtectedRoute>
               <Product />
-            </ProtectedRoute>
           } />
           <Route path="/profile" element={
             <ProtectedRoute>
@@ -42,14 +40,10 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/product/:id" element={
-            <ProtectedRoute>
               <Product />
-            </ProtectedRoute>
           } />
           <Route path="/contact" element={
-            // <ProtectedRoute>
             <Contact />
-            // </ProtectedRoute>
           } />
           <Route path="/login" element={
             <PublicRoute>
