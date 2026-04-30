@@ -52,7 +52,7 @@ const AdminHeader = () => {
 
           <NavLink to="/admin/stock" className={linkStyle}> Stock</NavLink>
 
-          <NavLink to="/admin/khata" className={linkStyle}>Khata</NavLink>
+          <NavLink to="/admin/khata" className={linkStyle}>Ledger</NavLink>
 
           <NavLink to="/admin/invoice" className={linkStyle}> Invoice</NavLink>
         </nav>
