@@ -20,7 +20,21 @@ app.get('/ping', (req, res) => {
 
 
 app.use(bodyParser.json());
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://amir-electric-store-tiv1.vercel.app"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/khata', KhataRouter);
