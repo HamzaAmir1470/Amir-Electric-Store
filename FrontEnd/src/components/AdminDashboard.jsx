@@ -524,15 +524,34 @@ const AdminDashboard = () => {
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Dashboard</h1>
                             <p className="text-gray-500 text-xs sm:text-sm mt-1">Welcome back! Here's your business overview</p>
                         </div>
-                        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+                        <div className="flex w-full sm:w-auto">
                             <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileHover={{ scale: 1.06 }}
+                                whileTap={{ scale: 0.92 }}
                                 onClick={fetchDashboardData}
-                                className="p-2 bg-white rounded-lg shadow-sm hover:shadow text-gray-600 transition-all flex-1 sm:flex-none"
+                                aria-label="Refresh dashboard"
                                 title="Refresh"
+                                className="group flex items-center justify-center gap-2 
+                                    px-3 py-2 rounded-lg 
+                                    bg-white border border-gray-200 shadow-sm 
+                                    hover:shadow-md hover:border-gray-300
+                                    transition-all duration-200
+                                    text-gray-600 hover:text-black
+                                    w-full sm:w-auto"
                             >
-                                <FiRefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                {/* Icon with subtle hover animation */}
+                                <motion.span
+                                    className="flex items-center"
+                                    whileHover={{ rotate: 180 }}
+                                    transition={{ duration: 0.4 }}
+                                >
+                                    <FiRefreshCw size={18} />
+                                </motion.span>
+
+                                {/* Label (hidden on small screens) */}
+                                <span className="hidden sm:inline text-sm font-medium">
+                                    Refresh
+                                </span>
                             </motion.button>
                         </div>
                     </div>
