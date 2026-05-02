@@ -1,5 +1,5 @@
 // Controllers/InvoiceController.js
-const Invoice = require("../Modals/Invoice");
+const Invoice = require("../Modals/invoice");
 const Khata = require("../Modals/Khata");
 const Transaction = require("../Modals/Transaction");
 
