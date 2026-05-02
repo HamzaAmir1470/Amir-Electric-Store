@@ -56,8 +56,35 @@ const Invoice = () => {
     const invoiceRef = useRef();
     const searchInputRef = useRef();
 
-    // API_URL from src/config.js (Vite env `VITE_API_URL` or localhost fallback)
+    const defaultSections = {
+        customerInfo: true,
+        addItems: true,
+        paymentInfo: true,
+        invoiceSettings: true
+    };
+    // Add these state variables
+    const [openSections, setOpenSections] = useState(defaultSections);
 
+   const toggleSection = (section) => {
+    setOpenSections(prev => ({
+        ...prev,
+        [section]: !prev[section],
+    }));
+};
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 640) {
+                setOpenSections(prev => {
+                    // only update if something is closed
+                    const allOpen = Object.values(prev).every(v => v === true);
+                    return allOpen ? prev : defaultSections;
+                });
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     // Get current user from localStorage
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -778,27 +805,27 @@ const Invoice = () => {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6"
+            className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6"
         >
             <div className="max-w-7xl mx-auto">
                 {/* Header with dynamic company name */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-8 flex justify-between items-center"
+                    className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                 >
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
                             <motion.div
                                 whileHover={{ rotate: 180 }}
                                 transition={{ duration: 0.3 }}
                                 className="bg-blue-600 p-2 rounded-xl"
                             >
-                                <FiPackage className="text-white text-2xl" />
+                                <FiPackage className="text-white text-xl sm:text-2xl" />
                             </motion.div>
                             Invoice Generator
                         </h1>
-                        <p className="text-gray-600 mt-2 ml-2">{settings.companyName} - Create professional invoices with product search from stock</p>
+                        <p className="text-gray-600 mt-2 ml-2 text-sm sm:text-base">{settings.companyName} - Create professional invoices with product search from stock</p>
                     </div>
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -807,7 +834,7 @@ const Invoice = () => {
                             setShowHistory(!showHistory);
                             if (!showHistory) fetchInvoices();
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md text-sm sm:text-base w-full sm:w-auto justify-center"
                     >
                         <FiClock />
                         {showHistory ? "New Invoice" : "Invoice History"}
@@ -830,11 +857,11 @@ const Invoice = () => {
                                         initial={{ opacity: 0, y: -20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -20 }}
-                                        className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between"
+                                        className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between flex-wrap gap-2"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <FiAlertTriangle className="text-yellow-600" />
-                                            <span className="text-sm text-yellow-800">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <FiAlertTriangle className="text-yellow-600 flex-shrink-0" />
+                                            <span className="text-yellow-800">
                                                 Customer has existing Khata balance: {settings.currency} {existingKhata.balance?.toFixed(2) || 0}
                                             </span>
                                         </div>
@@ -848,49 +875,49 @@ const Invoice = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Pricing Type Toggle */}
+                            {/* Pricing Type Toggle - Responsive */}
                             <motion.div
                                 variants={cardVariants}
                                 initial="initial"
                                 animate="animate"
                                 className="bg-white rounded-xl shadow-md p-4 mb-6"
                             >
-                                <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
                                         <FiTag className="text-gray-400 text-xl" />
                                         <span className="font-medium text-gray-700">Pricing Mode:</span>
                                     </div>
-                                    <div className="flex gap-4">
+                                    <div className="flex gap-4 w-full sm:w-auto">
                                         <motion.button
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => updatePricingType("retail")}
-                                            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${pricingType === "retail"
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all text-sm sm:text-base ${pricingType === "retail"
                                                 ? "bg-blue-600 text-white shadow-md"
                                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                                 }`}
                                         >
                                             {pricingType === "retail" ? <FiToggleRight className="text-xl" /> : <FiToggleLeft className="text-xl" />}
-                                            Retail Pricing
+                                            Retail
                                         </motion.button>
                                         <motion.button
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => updatePricingType("wholesale")}
-                                            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${pricingType === "wholesale"
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all text-sm sm:text-base ${pricingType === "wholesale"
                                                 ? "bg-orange-600 text-white shadow-md"
                                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                                 }`}
                                         >
                                             {pricingType === "wholesale" ? <FiToggleRight className="text-xl" /> : <FiToggleLeft className="text-xl" />}
-                                            Wholesale Pricing
+                                            Wholesale
                                         </motion.button>
                                     </div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-xs sm:text-sm text-gray-500">
                                         {pricingType === "retail" ? (
-                                            <span className="text-blue-600">✓ Using retail prices for all items</span>
+                                            <span className="text-blue-600">✓ Using retail prices</span>
                                         ) : (
-                                            <span className="text-orange-600">✓ Using wholesale prices for all items</span>
+                                            <span className="text-orange-600">✓ Using wholesale prices</span>
                                         )}
                                     </div>
                                 </div>
@@ -899,7 +926,7 @@ const Invoice = () => {
                             <div className="grid lg:grid-cols-3 gap-6">
                                 {/* Left Column - Forms */}
                                 <div className="lg:col-span-2 space-y-6">
-                                    {/* Customer Info */}
+                                    {/* Customer Info - Collapsible */}
                                     <motion.div
                                         variants={cardVariants}
                                         initial="initial"
@@ -910,77 +937,97 @@ const Invoice = () => {
                                         <motion.div
                                             initial={{ x: -100 }}
                                             animate={{ x: 0 }}
-                                            className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4"
+                                            onClick={() => toggleSection('customerInfo')}
+                                            className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 flex justify-between items-center cursor-pointer"
                                         >
-                                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                                                 <FiUser />
                                                 Customer Information
                                             </h2>
+                                            <motion.div
+                                                animate={{ rotate: openSections.customerInfo ? 180 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="sm:hidden"
+                                            >
+                                                <FiChevronDown className="text-white" />
+                                            </motion.div>
                                         </motion.div>
-                                        <div className="p-6 grid md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Customer Name *
-                                                </label>
-                                                <div className="relative">
-                                                    <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        placeholder="Enter customer name"
-                                                        value={customer.name}
-                                                        onChange={handleCustomer}
-                                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Phone Number
-                                                </label>
-                                                <div className="relative">
-                                                    <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                                    <input
-                                                        type="text"
-                                                        name="phone"
-                                                        placeholder="XXXX XXXXXXX"
-                                                        value={customer.phone}
-                                                        onChange={handleCustomer}
-                                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Email
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    placeholder="customer@example.com"
-                                                    value={customer.email}
-                                                    onChange={handleCustomer}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Address
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    name="address"
-                                                    placeholder="Customer address"
-                                                    value={customer.address}
-                                                    onChange={handleCustomer}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                        </div>
+                                        <AnimatePresence>
+                                            {(openSections.customerInfo || window.innerWidth >= 640) && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Customer Name *
+                                                            </label>
+                                                            <div className="relative">
+                                                                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                <input
+                                                                    type="text"
+                                                                    name="name"
+                                                                    placeholder="Enter customer name"
+                                                                    value={customer.name}
+                                                                    onChange={handleCustomer}
+                                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                                    required
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Phone Number
+                                                            </label>
+                                                            <div className="relative">
+                                                                <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                <input
+                                                                    type="text"
+                                                                    name="phone"
+                                                                    placeholder="XXXX XXXXXXX"
+                                                                    value={customer.phone}
+                                                                    onChange={handleCustomer}
+                                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Email
+                                                            </label>
+                                                            <input
+                                                                type="email"
+                                                                name="email"
+                                                                placeholder="customer@example.com"
+                                                                value={customer.email}
+                                                                onChange={handleCustomer}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Address
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                name="address"
+                                                                placeholder="Customer address"
+                                                                value={customer.address}
+                                                                onChange={handleCustomer}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </motion.div>
 
-                                    {/* Add Items with Search */}
+                                    {/* Add Items with Search - Collapsible */}
                                     <motion.div
                                         variants={cardVariants}
                                         initial="initial"
@@ -991,150 +1038,166 @@ const Invoice = () => {
                                         <motion.div
                                             initial={{ x: -100 }}
                                             animate={{ x: 0 }}
-                                            className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4"
+                                            onClick={() => toggleSection('addItems')}
+                                            className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 flex justify-between items-center cursor-pointer"
                                         >
-                                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                                                 <FiPackage />
                                                 Add Items
                                             </h2>
-                                        </motion.div>
-                                        <div className="p-6">
-                                            <div className="flex flex-wrap gap-4 mb-4 items-end">
-                                                <div className="flex-1 relative">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Product Name
-                                                    </label>
-                                                    <div className="relative">
-                                                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                                        <input
-                                                            ref={searchInputRef}
-                                                            type="text"
-                                                            name="product"
-                                                            placeholder="Search product by name or SKU..."
-                                                            value={item.product}
-                                                            onChange={handleItem}
-                                                            onFocus={() => item.product && setShowSearchDropdown(true)}
-                                                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.product ? 'border-red-500' : 'border-gray-300'
-                                                                }`}
-                                                        />
-                                                        {item.product && showSearchDropdown && (
-                                                            <button
-                                                                onClick={() => setShowSearchDropdown(false)}
-                                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                                            >
-                                                                <FiX />
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    <AnimatePresence>
-                                                        {showSearchDropdown && searchResults.length > 0 && (
-                                                            <motion.div
-                                                                initial={{ opacity: 0, y: -10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                exit={{ opacity: 0, y: -10 }}
-                                                                className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                                                            >
-                                                                {searchResults.map((product, idx) => (
-                                                                    <motion.div
-                                                                        key={product.id}
-                                                                        initial={{ opacity: 0, x: -10 }}
-                                                                        animate={{ opacity: 1, x: 0 }}
-                                                                        transition={{ delay: idx * 0.05 }}
-                                                                        onClick={() => selectProduct(product)}
-                                                                        className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0"
-                                                                    >
-                                                                        <div className="flex justify-between items-center">
-                                                                            <div>
-                                                                                <div className="font-medium text-gray-800">{product.name}</div>
-                                                                                <div className="text-xs text-gray-500">
-                                                                                    SKU: {product.sku} | Stock: {product.stock} units
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                {pricingType === "retail" ? (
-                                                                                    <>
-                                                                                        <div className="font-semibold text-blue-600">
-                                                                                            {settings.currency} {product.retailPrice}
-                                                                                        </div>
-                                                                                        {product.wholesalePrice > 0 && (
-                                                                                            <div className="text-xs text-gray-500 line-through">
-                                                                                                Wholesale: {settings.currency} {product.wholesalePrice}
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <div className="font-semibold text-orange-600">
-                                                                                            {settings.currency} {product.wholesalePrice}
-                                                                                        </div>
-                                                                                        <div className="text-xs text-gray-500 line-through">
-                                                                                            Retail: {settings.currency} {product.retailPrice}
-                                                                                        </div>
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                ))}
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-
-                                                    {errors.product && <p className="mt-1 text-xs text-red-500">{errors.product}</p>}
-                                                </div>
-
-                                                <div className="flex-none w-32">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Price ({pricingType === "retail" ? "Retail" : "Wholesale"})
-                                                    </label>
-                                                    <div className="relative">
-                                                        <FiDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                                        <input
-                                                            type="number"
-                                                            name="price"
-                                                            placeholder="0"
-                                                            value={item.price}
-                                                            onChange={handleItem}
-                                                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.price ? 'border-red-500' : 'border-gray-300'
-                                                                }`}
-                                                        />
-                                                    </div>
-                                                    {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
-                                                </div>
-
-                                                <div className="flex-none w-32">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Qty
-                                                    </label>
-                                                    <div className="relative">
-                                                        <FiHash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                                        <input
-                                                            type="number"
-                                                            name="qty"
-                                                            placeholder="1"
-                                                            value={item.qty}
-                                                            onChange={handleItem}
-                                                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.qty ? 'border-red-500' : 'border-gray-300'
-                                                                }`}
-                                                        />
-                                                    </div>
-                                                    {errors.qty && <p className="mt-1 text-xs text-red-500">{errors.qty}</p>}
-                                                </div>
-                                            </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={addItem}
-                                                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                            <motion.div
+                                                animate={{ rotate: openSections.addItems ? 180 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="sm:hidden"
                                             >
-                                                <FiPlus />
-                                                Add Item to Invoice
-                                            </motion.button>
-                                        </div>
+                                                <FiChevronDown className="text-white" />
+                                            </motion.div>
+                                        </motion.div>
+                                        <AnimatePresence>
+                                            {(openSections.addItems || window.innerWidth >= 640) && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-4 sm:p-6">
+                                                        <div className="flex flex-col sm:flex-row gap-4 mb-4 items-end">
+                                                            <div className="flex-1 w-full relative">
+                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Product Name
+                                                                </label>
+                                                                <div className="relative">
+                                                                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                    <input
+                                                                        ref={searchInputRef}
+                                                                        type="text"
+                                                                        name="product"
+                                                                        placeholder="Search product by name or SKU..."
+                                                                        value={item.product}
+                                                                        onChange={handleItem}
+                                                                        onFocus={() => item.product && setShowSearchDropdown(true)}
+                                                                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${errors.product ? 'border-red-500' : 'border-gray-300'
+                                                                            }`}
+                                                                    />
+                                                                    {item.product && showSearchDropdown && (
+                                                                        <button
+                                                                            onClick={() => setShowSearchDropdown(false)}
+                                                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                                        >
+                                                                            <FiX />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                <AnimatePresence>
+                                                                    {showSearchDropdown && searchResults.length > 0 && (
+                                                                        <motion.div
+                                                                            initial={{ opacity: 0, y: -10 }}
+                                                                            animate={{ opacity: 1, y: 0 }}
+                                                                            exit={{ opacity: 0, y: -10 }}
+                                                                            className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                                                                        >
+                                                                            {searchResults.map((product, idx) => (
+                                                                                <motion.div
+                                                                                    key={product.id}
+                                                                                    initial={{ opacity: 0, x: -10 }}
+                                                                                    animate={{ opacity: 1, x: 0 }}
+                                                                                    transition={{ delay: idx * 0.05 }}
+                                                                                    onClick={() => selectProduct(product)}
+                                                                                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0"
+                                                                                >
+                                                                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                                                                        <div>
+                                                                                            <div className="font-medium text-gray-800 text-sm sm:text-base">{product.name}</div>
+                                                                                            <div className="text-xs text-gray-500">
+                                                                                                SKU: {product.sku} | Stock: {product.stock}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="text-right">
+                                                                                            {pricingType === "retail" ? (
+                                                                                                <>
+                                                                                                    <div className="font-semibold text-blue-600 text-sm sm:text-base">
+                                                                                                        {settings.currency} {product.retailPrice}
+                                                                                                    </div>
+                                                                                                    {product.wholesalePrice > 0 && (
+                                                                                                        <div className="text-xs text-gray-500 line-through">
+                                                                                                            W: {settings.currency} {product.wholesalePrice}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    <div className="font-semibold text-orange-600 text-sm sm:text-base">
+                                                                                                        {settings.currency} {product.wholesalePrice}
+                                                                                                    </div>
+                                                                                                    <div className="text-xs text-gray-500 line-through">
+                                                                                                        R: {settings.currency} {product.retailPrice}
+                                                                                                    </div>
+                                                                                                </>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </motion.div>
+                                                                            ))}
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                                {errors.product && <p className="mt-1 text-xs text-red-500">{errors.product}</p>}
+                                                            </div>
+                                                            <div className="w-full sm:w-32">
+                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Price
+                                                                </label>
+                                                                <div className="relative">
+                                                                    <FiDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                    <input
+                                                                        type="number"
+                                                                        name="price"
+                                                                        placeholder="0"
+                                                                        value={item.price}
+                                                                        onChange={handleItem}
+                                                                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${errors.price ? 'border-red-500' : 'border-gray-300'
+                                                                            }`}
+                                                                    />
+                                                                </div>
+                                                                {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
+                                                            </div>
+                                                            <div className="w-full sm:w-32">
+                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Qty
+                                                                </label>
+                                                                <div className="relative">
+                                                                    <FiHash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                                                    <input
+                                                                        type="number"
+                                                                        name="qty"
+                                                                        placeholder="1"
+                                                                        value={item.qty}
+                                                                        onChange={handleItem}
+                                                                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${errors.qty ? 'border-red-500' : 'border-gray-300'
+                                                                            }`}
+                                                                    />
+                                                                </div>
+                                                                {errors.qty && <p className="mt-1 text-xs text-red-500">{errors.qty}</p>}
+                                                            </div>
+                                                        </div>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            onClick={addItem}
+                                                            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm sm:text-base"
+                                                        >
+                                                            <FiPlus />
+                                                            Add Item to Invoice
+                                                        </motion.button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </motion.div>
 
-                                    {/* Payment Section */}
+                                    {/* Payment Section - Collapsible */}
                                     <motion.div
                                         variants={cardVariants}
                                         initial="initial"
@@ -1145,23 +1208,22 @@ const Invoice = () => {
                                         <motion.div
                                             initial={{ x: -100 }}
                                             animate={{ x: 0 }}
-                                            className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center cursor-pointer"
-                                            onClick={() => setShowPaymentSection(!showPaymentSection)}
+                                            onClick={() => toggleSection('paymentInfo')}
+                                            className="bg-gradient-to-r from-green-600 to-green-700 px-4 sm:px-6 py-4 flex justify-between items-center cursor-pointer"
                                         >
-                                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                                                 <FiCreditCard />
                                                 Payment Information
                                             </h2>
                                             <motion.div
-                                                animate={{ rotate: showPaymentSection ? 180 : 0 }}
+                                                animate={{ rotate: openSections.paymentInfo ? 180 : 0 }}
                                                 transition={{ duration: 0.3 }}
                                             >
                                                 <FiChevronDown className="text-white" />
                                             </motion.div>
                                         </motion.div>
-
                                         <AnimatePresence>
-                                            {showPaymentSection && (
+                                            {openSections.paymentInfo && (
                                                 <motion.div
                                                     initial={{ height: 0, opacity: 0 }}
                                                     animate={{ height: "auto", opacity: 1 }}
@@ -1169,12 +1231,12 @@ const Invoice = () => {
                                                     transition={{ duration: 0.3 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="p-6 space-y-4">
+                                                    <div className="p-4 sm:p-6 space-y-4">
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Payment Status
                                                             </label>
-                                                            <div className="flex gap-4">
+                                                            <div className="flex flex-col sm:flex-row gap-3">
                                                                 <label className="flex items-center gap-2">
                                                                     <input
                                                                         type="radio"
@@ -1186,7 +1248,7 @@ const Invoice = () => {
                                                                         }}
                                                                         className="w-4 h-4 text-green-600"
                                                                     />
-                                                                    <span>Full Payment</span>
+                                                                    <span className="text-sm">Full Payment</span>
                                                                 </label>
                                                                 <label className="flex items-center gap-2">
                                                                     <input
@@ -1199,11 +1261,10 @@ const Invoice = () => {
                                                                         }}
                                                                         className="w-4 h-4 text-yellow-600"
                                                                     />
-                                                                    <span>Partial Payment (Add to Khata)</span>
+                                                                    <span className="text-sm">Partial Payment (Add to Khata)</span>
                                                                 </label>
                                                             </div>
                                                         </div>
-
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Payment Amount
@@ -1216,37 +1277,27 @@ const Invoice = () => {
                                                                     placeholder="Enter payment amount"
                                                                     onChange={(e) => {
                                                                         let value = e.target.value;
-
-                                                                        // Allow empty input
                                                                         if (value === "") {
                                                                             setPaymentAmount("");
                                                                             return;
                                                                         }
-
                                                                         const amount = Number(value);
-
-                                                                        // Prevent invalid numbers
                                                                         if (isNaN(amount) || amount < 0) {
-                                                                            handleError("Enter a valid positive number");
+                                                                            toast.error("Enter a valid positive number");
                                                                             return;
                                                                         }
-
-                                                                        // Allow typing but validate logically
                                                                         if (amount > grandTotal) {
-                                                                            handleError("Payment amount cannot exceed invoice total");
+                                                                            toast.error("Payment amount cannot exceed invoice total");
                                                                         }
-
                                                                         setPaymentAmount(amount);
                                                                     }}
-                                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
                                                                 />
                                                             </div>
                                                             <p className="text-xs text-gray-500 mt-1">
-                                                                Invoice Total: {settings.currency} {grandTotal.toFixed(2)} |
-                                                                Remaining: {settings.currency} {(grandTotal - paymentAmount).toFixed(2)}
+                                                                Total: {settings.currency} {grandTotal.toFixed(2)} | Remaining: {settings.currency} {(grandTotal - (typeof paymentAmount === 'number' ? paymentAmount : 0)).toFixed(2)}
                                                             </p>
                                                         </div>
-
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Payment Method
@@ -1254,14 +1305,13 @@ const Invoice = () => {
                                                             <select
                                                                 value={paymentMethod}
                                                                 onChange={(e) => setPaymentMethod(e.target.value)}
-                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
                                                             >
                                                                 <option value="cash">Cash</option>
                                                                 <option value="bank">Bank Transfer</option>
                                                                 <option value="card">Card</option>
                                                             </select>
                                                         </div>
-
                                                         {paymentStatus === "partial" && (
                                                             <div className="p-3 bg-yellow-50 rounded-lg">
                                                                 <p className="text-sm text-yellow-800">
@@ -1276,7 +1326,7 @@ const Invoice = () => {
                                         </AnimatePresence>
                                     </motion.div>
 
-                                    {/* Invoice Settings */}
+                                    {/* Invoice Settings - Collapsible */}
                                     <motion.div
                                         variants={cardVariants}
                                         initial="initial"
@@ -1287,57 +1337,77 @@ const Invoice = () => {
                                         <motion.div
                                             initial={{ x: -100 }}
                                             animate={{ x: 0 }}
-                                            className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4"
+                                            onClick={() => toggleSection('invoiceSettings')}
+                                            className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 sm:px-6 py-4 flex justify-between items-center cursor-pointer"
                                         >
-                                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                                                 <FiEdit2 />
                                                 Invoice Settings
                                             </h2>
+                                            <motion.div
+                                                animate={{ rotate: openSections.invoiceSettings ? 180 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="sm:hidden"
+                                            >
+                                                <FiChevronDown className="text-white" />
+                                            </motion.div>
                                         </motion.div>
-                                        <div className="p-6 grid md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Discount (%)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    value={discount}
-                                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    min="0"
-                                                    max="100"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Tax (%)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    value={tax}
-                                                    onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    min="0"
-                                                    max="100"
-                                                />
-                                            </div>
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Notes / Terms
-                                                </label>
-                                                <textarea
-                                                    value={notes}
-                                                    onChange={(e) => setNotes(e.target.value)}
-                                                    rows="3"
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Payment terms, thank you message, etc..."
-                                                />
-                                            </div>
-                                        </div>
+                                        <AnimatePresence>
+                                            {(openSections.invoiceSettings || window.innerWidth >= 640) && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Discount (%)
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                value={discount}
+                                                                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                                min="0"
+                                                                max="100"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Tax (%)
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                value={tax}
+                                                                onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                                min="0"
+                                                                max="100"
+                                                            />
+                                                        </div>
+                                                        <div className="sm:col-span-2">
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Notes / Terms
+                                                            </label>
+                                                            <textarea
+                                                                value={notes}
+                                                                onChange={(e) => setNotes(e.target.value)}
+                                                                rows={3}
+                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                                                placeholder="Payment terms, thank you message, etc..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </motion.div>
                                 </div>
 
-                                {/* Right Column - Invoice Preview */}
+                                {/* Right Column - Invoice Preview (remains sticky, responsive table) */}
                                 <motion.div
                                     variants={cardVariants}
                                     initial="initial"
@@ -1345,13 +1415,13 @@ const Invoice = () => {
                                     transition={{ delay: 0.4 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white rounded-xl shadow-md overflow-hidden sticky top-6">
+                                    <div className="bg-white rounded-xl shadow-md overflow-hidden lg:sticky lg:top-6">
                                         <motion.div
                                             initial={{ x: 100 }}
                                             animate={{ x: 0 }}
-                                            className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4"
+                                            className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 sm:px-6 py-4"
                                         >
-                                            <h2 className="text-lg font-semibold text-white flex items-center justify-between">
+                                            <h2 className="text-base sm:text-lg font-semibold text-white flex items-center justify-between flex-wrap gap-2">
                                                 <span>Invoice Preview</span>
                                                 <span className="text-xs font-mono bg-white/20 px-2 py-1 rounded">
                                                     {invoiceNumber}
@@ -1359,7 +1429,7 @@ const Invoice = () => {
                                             </h2>
                                         </motion.div>
 
-                                        <div className="p-6" ref={invoiceRef}>
+                                        <div className="p-4 sm:p-6" ref={invoiceRef}>
                                             <div className="mb-4 pb-3 border-b">
                                                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${pricingType === "retail" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
                                                     <FiTag className="text-xs" />
@@ -1370,12 +1440,12 @@ const Invoice = () => {
                                             {items.length === 0 ? (
                                                 <div className="text-center py-8 text-gray-500">
                                                     <FiPackage className="text-4xl mx-auto mb-2 opacity-50" />
-                                                    <p>No items added yet</p>
+                                                    <p className="text-sm">No items added yet</p>
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-sm">
+                                                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                                                        <table className="w-full text-xs sm:text-sm min-w-[400px]">
                                                             <thead className="bg-gray-50">
                                                                 <tr>
                                                                     <th className="p-2 text-left">Product</th>
@@ -1402,7 +1472,7 @@ const Invoice = () => {
                                                                                     type="text"
                                                                                     value={it.product}
                                                                                     onChange={(e) => updateItem(it.id, 'product', e.target.value)}
-                                                                                    className="w-full p-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                                    className="w-full p-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm"
                                                                                 />
                                                                             </td>
                                                                             <td className="p-2">
@@ -1410,7 +1480,7 @@ const Invoice = () => {
                                                                                     type="number"
                                                                                     value={it.price}
                                                                                     onChange={(e) => updateItem(it.id, 'price', parseFloat(e.target.value))}
-                                                                                    className="w-20 p-1 text-right border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                                    className="w-16 sm:w-20 p-1 text-right border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm"
                                                                                 />
                                                                             </td>
                                                                             <td className="p-2 text-center">
@@ -1418,10 +1488,10 @@ const Invoice = () => {
                                                                                     type="number"
                                                                                     value={it.qty}
                                                                                     onChange={(e) => updateItem(it.id, 'qty', parseFloat(e.target.value))}
-                                                                                    className="w-16 p-1 text-center border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                                    className="w-14 sm:w-16 p-1 text-center border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm"
                                                                                 />
                                                                             </td>
-                                                                            <td className="p-2 text-right font-semibold">
+                                                                            <td className="p-2 text-right font-semibold text-xs sm:text-sm">
                                                                                 {settings.currency} {it.total.toFixed(2)}
                                                                             </td>
                                                                             <td className="p-2 text-center">
@@ -1431,7 +1501,7 @@ const Invoice = () => {
                                                                                     onClick={() => removeItem(it.id)}
                                                                                     className="text-red-600 hover:text-red-800"
                                                                                 >
-                                                                                    <FiTrash2 />
+                                                                                    <FiTrash2 className="text-sm" />
                                                                                 </motion.button>
                                                                             </td>
                                                                         </motion.tr>
@@ -1442,7 +1512,7 @@ const Invoice = () => {
                                                     </div>
 
                                                     <div className="mt-4 pt-4 border-t">
-                                                        <div className="space-y-2 text-sm">
+                                                        <div className="space-y-2 text-xs sm:text-sm">
                                                             <div className="flex justify-between">
                                                                 <span>Subtotal:</span>
                                                                 <span>{settings.currency} {subtotal.toFixed(2)}</span>
@@ -1459,20 +1529,20 @@ const Invoice = () => {
                                                                     <span>+{settings.currency} {taxAmount.toFixed(2)}</span>
                                                                 </div>
                                                             )}
-                                                            <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                                                            <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
                                                                 <span>Grand Total:</span>
                                                                 <span className="text-blue-600">{settings.currency} {grandTotal.toFixed(2)}</span>
                                                             </div>
-                                                            {showPaymentSection && paymentAmount > 0 && (
+                                                            {openSections.paymentInfo && (typeof paymentAmount === 'number' ? paymentAmount : 0) > 0 && (
                                                                 <>
                                                                     <div className="flex justify-between text-green-600">
                                                                         <span>Amount Paid:</span>
-                                                                        <span>-{settings.currency} {paymentAmount.toFixed(2)}</span>
+                                                                        <span>-{settings.currency} {(typeof paymentAmount === 'number' ? paymentAmount : 0).toFixed(2)}</span>
                                                                     </div>
-                                                                    {paymentAmount < grandTotal && (
+                                                                    {(typeof paymentAmount === 'number' ? paymentAmount : 0) < grandTotal && (
                                                                         <div className="flex justify-between text-yellow-600 font-semibold">
                                                                             <span>Remaining Balance:</span>
-                                                                            <span>{settings.currency} {(grandTotal - paymentAmount).toFixed(2)}</span>
+                                                                            <span>{settings.currency} {(grandTotal - (typeof paymentAmount === 'number' ? paymentAmount : 0)).toFixed(2)}</span>
                                                                         </div>
                                                                     )}
                                                                 </>
@@ -1483,32 +1553,30 @@ const Invoice = () => {
                                             )}
                                         </div>
 
-                                        <div className="p-6 pt-0 space-y-3">
+                                        <div className="p-4 sm:p-6 pt-0 space-y-3">
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={generateInvoice}
-                                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition flex items-center justify-center gap-2 shadow-lg"
+                                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base"
                                             >
                                                 <FiCheckCircle />
                                                 Generate Invoice
                                             </motion.button>
-
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={() => printInvoice()}
-                                                className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                                                className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 text-sm sm:text-base"
                                             >
                                                 <FiPrinter />
                                                 Print Preview
                                             </motion.button>
-
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={resetForm}
-                                                className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition"
+                                                className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition text-sm sm:text-base"
                                             >
                                                 Reset All
                                             </motion.button>
@@ -1518,7 +1586,7 @@ const Invoice = () => {
                             </div>
                         </motion.div>
                     ) : (
-                        // Invoice History Section (same as before)
+                        // Invoice History Section (responsive table)
                         <motion.div
                             key="invoice-history"
                             initial={{ opacity: 0, x: 20 }}
@@ -1527,8 +1595,8 @@ const Invoice = () => {
                             transition={{ duration: 0.3 }}
                             className="bg-white rounded-xl shadow-md overflow-hidden"
                         >
-                            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
-                                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
                                     <FiClock />
                                     Invoice History
                                 </h2>
@@ -1536,14 +1604,14 @@ const Invoice = () => {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={fetchInvoices}
-                                    className="flex items-center gap-2 px-3 py-1 bg-white/20 text-white rounded-lg hover:bg-white/30 transition"
+                                    className="flex items-center gap-2 px-3 py-1 bg-white/20 text-white rounded-lg hover:bg-white/30 transition text-sm"
                                 >
                                     <FiRefreshCw />
                                     Refresh
                                 </motion.button>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 {loadingInvoices ? (
                                     <div className="text-center py-12">
                                         <motion.div
@@ -1561,35 +1629,23 @@ const Invoice = () => {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setShowHistory(false)}
-                                            className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                            className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                                         >
                                             <FiPackage />
                                             Create First Invoice
                                         </motion.button>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
+                                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                                        <table className="w-full min-w-[600px]">
                                             <thead className="bg-gray-50 border-b border-gray-200">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Invoice #
-                                                    </th>
-                                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Customer
-                                                    </th>
-                                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Date
-                                                    </th>
-                                                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Amount
-                                                    </th>
-                                                    <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Status
-                                                    </th>
-                                                    <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Actions
-                                                    </th>
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                                                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                                    <th className="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                    <th className="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
@@ -1604,28 +1660,29 @@ const Invoice = () => {
                                                             whileHover={{ backgroundColor: '#F9FAFB' }}
                                                             className="transition"
                                                         >
-                                                            <td className="px-6 py-4 font-mono text-sm font-medium text-gray-900">
+                                                            <td className="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-gray-900">
                                                                 {invoice.invoiceNumber}
                                                             </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="font-medium text-gray-900">{invoice.customer.name}</div>
+                                                            <td className="px-4 sm:px-6 py-4">
+                                                                <div className="font-medium text-gray-900 text-sm">{invoice.customer.name}</div>
                                                                 {invoice.customer.phone && (
-                                                                    <div className="text-xs text-gray-500">{invoice.customer.phone}</div>
+                                                                    <div className="text-xs text-gray-500 hidden sm:block">{invoice.customer.phone}</div>
                                                                 )}
                                                             </td>
-                                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                            <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 hidden sm:table-cell">
                                                                 {formatDate(invoice.date)}
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-bold text-gray-900">
+                                                            <td className="px-4 sm:px-6 py-4 text-right font-bold text-gray-900 text-sm">
                                                                 {settings.currency} {invoice.grandTotal.toFixed(2)}
                                                             </td>
-                                                            <td className="px-6 py-4 text-center">
+                                                            <td className="px-4 sm:px-6 py-4 text-center">
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${invoice.payment?.paymentStatus === 'paid' ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                                                                     {invoice.payment?.paymentStatus === 'paid' ? <FiCheckCircle className="text-xs" /> : <FiAlertTriangle className="text-xs" />}
-                                                                    {invoice.payment?.paymentStatus === 'paid' ? "Paid" : `Due: ${settings.currency} ${invoice.payment?.remainingAmount?.toFixed(2)}`}
+                                                                    <span className="hidden sm:inline">{invoice.payment?.paymentStatus === 'paid' ? "Paid" : `Due: ${settings.currency} ${invoice.payment?.remainingAmount?.toFixed(2)}`}</span>
+                                                                    <span className="sm:hidden">{invoice.payment?.paymentStatus === 'paid' ? "Paid" : `Due: ${settings.currency} ${invoice.payment?.remainingAmount?.toFixed(2)}`}</span>
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-4 sm:px-6 py-4">
                                                                 <div className="flex gap-2 justify-center">
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.1 }}
@@ -1663,7 +1720,7 @@ const Invoice = () => {
                 </AnimatePresence>
             </div>
 
-            {/* Invoice Detail Modal */}
+            {/* Invoice Detail Modal - Responsive */}
             <AnimatePresence>
                 {showInvoiceDetail && selectedInvoice && (
                     <motion.div
@@ -1676,10 +1733,10 @@ const Invoice = () => {
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto"
+                            className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
                         >
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
                                     <FiPackage className="text-indigo-600" />
                                     Invoice Details
                                 </h3>
@@ -1692,48 +1749,50 @@ const Invoice = () => {
                                 </motion.button>
                             </div>
 
-                            <div className="border rounded-lg p-6">
+                            <div className="border rounded-lg p-4 sm:p-6">
                                 <div className="text-center mb-6">
-                                    <h2 className="text-2xl font-bold text-blue-600">{settings.companyName}</h2>
-                                    <p className="text-gray-500">{settings.companyAddress}</p>
-                                    <p className="text-gray-500 text-sm">Phone: {settings.companyPhone} | Email: {settings.companyEmail}</p>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-blue-600">{settings.companyName}</h2>
+                                    <p className="text-gray-500 text-sm">{settings.companyAddress}</p>
+                                    <p className="text-gray-500 text-xs sm:text-sm">Phone: {settings.companyPhone} | Email: {settings.companyEmail}</p>
                                     <div className="mt-4">
-                                        <h3 className="text-xl font-bold">INVOICE</h3>
+                                        <h3 className="text-lg sm:text-xl font-bold">INVOICE</h3>
                                         <p className="text-sm">#{selectedInvoice.invoiceNumber}</p>
                                         <p className="text-sm">Date: {formatDate(selectedInvoice.date)}</p>
                                     </div>
                                 </div>
 
                                 <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                                    <h4 className="font-semibold mb-2">Bill To:</h4>
-                                    <p className="font-medium">{selectedInvoice.customer.name}</p>
-                                    {selectedInvoice.customer.phone && <p className="text-sm">{selectedInvoice.customer.phone}</p>}
-                                    {selectedInvoice.customer.email && <p className="text-sm">{selectedInvoice.customer.email}</p>}
-                                    {selectedInvoice.customer.address && <p className="text-sm">{selectedInvoice.customer.address}</p>}
+                                    <h4 className="font-semibold mb-2 text-sm sm:text-base">Bill To:</h4>
+                                    <p className="font-medium text-sm sm:text-base">{selectedInvoice.customer.name}</p>
+                                    {selectedInvoice.customer.phone && <p className="text-xs sm:text-sm">{selectedInvoice.customer.phone}</p>}
+                                    {selectedInvoice.customer.email && <p className="text-xs sm:text-sm">{selectedInvoice.customer.email}</p>}
+                                    {selectedInvoice.customer.address && <p className="text-xs sm:text-sm">{selectedInvoice.customer.address}</p>}
                                 </div>
 
-                                <table className="w-full mb-6">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="p-3 text-left">Product</th>
-                                            <th className="p-3 text-right">Price</th>
-                                            <th className="p-3 text-center">Qty</th>
-                                            <th className="p-3 text-right">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedInvoice.items.map((item, idx) => (
-                                            <tr key={idx} className="border-b">
-                                                <td className="p-3">{item.product}</td>
-                                                <td className="p-3 text-right">{settings.currency} {item.price.toFixed(2)}</td>
-                                                <td className="p-3 text-center">{item.qty}</td>
-                                                <td className="p-3 text-right font-semibold">{settings.currency} {item.total.toFixed(2)}</td>
+                                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                                    <table className="w-full min-w-[400px] mb-6">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="p-3 text-left text-xs sm:text-sm">Product</th>
+                                                <th className="p-3 text-right text-xs sm:text-sm">Price</th>
+                                                <th className="p-3 text-center text-xs sm:text-sm">Qty</th>
+                                                <th className="p-3 text-right text-xs sm:text-sm">Total</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {selectedInvoice.items.map((item, idx) => (
+                                                <tr key={idx} className="border-b">
+                                                    <td className="p-3 text-xs sm:text-sm">{item.product}</td>
+                                                    <td className="p-3 text-right text-xs sm:text-sm">{settings.currency} {item.price.toFixed(2)}</td>
+                                                    <td className="p-3 text-center text-xs sm:text-sm">{item.qty}</td>
+                                                    <td className="p-3 text-right font-semibold text-xs sm:text-sm">{settings.currency} {item.total.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                <div className="text-right space-y-2">
+                                <div className="text-right space-y-2 text-xs sm:text-sm">
                                     <p>Subtotal: {settings.currency} {selectedInvoice.subtotal.toFixed(2)}</p>
                                     {selectedInvoice.discount > 0 && (
                                         <p className="text-green-600">Discount ({selectedInvoice.discount}%): -{settings.currency} {selectedInvoice.discountAmount.toFixed(2)}</p>
@@ -1741,38 +1800,38 @@ const Invoice = () => {
                                     {selectedInvoice.tax > 0 && (
                                         <p className="text-orange-600">Tax ({selectedInvoice.tax}%): +{settings.currency} {selectedInvoice.taxAmount.toFixed(2)}</p>
                                     )}
-                                    <p className="text-xl font-bold text-blue-600">Grand Total: {settings.currency} {selectedInvoice.grandTotal.toFixed(2)}</p>
+                                    <p className="text-base sm:text-xl font-bold text-blue-600">Grand Total: {settings.currency} {selectedInvoice.grandTotal.toFixed(2)}</p>
 
                                     {selectedInvoice.payment && (
                                         <div className="mt-4 pt-4 border-t">
-                                            <p className="font-semibold">Payment Information:</p>
-                                            <p>Amount Paid: {settings.currency} {selectedInvoice.payment.paidAmount?.toFixed(2)}</p>
+                                            <p className="font-semibold text-sm">Payment Information:</p>
+                                            <p className="text-xs sm:text-sm">Amount Paid: {settings.currency} {selectedInvoice.payment.paidAmount?.toFixed(2)}</p>
                                             {selectedInvoice.payment.remainingAmount > 0 && (
-                                                <p className="text-yellow-600">Remaining Balance: {settings.currency} {selectedInvoice.payment.remainingAmount.toFixed(2)}</p>
+                                                <p className="text-yellow-600 text-xs sm:text-sm">Remaining Balance: {settings.currency} {selectedInvoice.payment.remainingAmount.toFixed(2)}</p>
                                             )}
-                                            <p>Payment Method: {selectedInvoice.payment.paymentMethod}</p>
+                                            <p className="text-xs sm:text-sm">Payment Method: {selectedInvoice.payment.paymentMethod}</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {selectedInvoice.notes && (
                                     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                        <p className="font-semibold mb-1">Notes:</p>
-                                        <p className="text-sm">{selectedInvoice.notes}</p>
+                                        <p className="font-semibold mb-1 text-sm">Notes:</p>
+                                        <p className="text-xs sm:text-sm">{selectedInvoice.notes}</p>
                                     </div>
                                 )}
 
-                                <div className="mt-6 pt-4 border-t text-center text-gray-500 text-sm">
+                                <div className="mt-6 pt-4 border-t text-center text-gray-500 text-xs sm:text-sm">
                                     {settings.invoiceFooter}
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 mt-6">
+                            <div className="flex flex-col sm:flex-row gap-3 mt-6">
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => printInvoice(selectedInvoice)}
-                                    className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                                    className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 text-sm"
                                 >
                                     <FiPrinter />
                                     Print Invoice
@@ -1781,7 +1840,7 @@ const Invoice = () => {
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowInvoiceDetail(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
                                 >
                                     Close
                                 </motion.button>
@@ -1791,7 +1850,7 @@ const Invoice = () => {
                 )}
             </AnimatePresence>
 
-            <ToastContainer />
+            <ToastContainer position="bottom-center" />
         </motion.div>
     );
 };
