@@ -15,15 +15,16 @@ require('./Modals/db');
 const PORT = process.env.PORT || 8080;
 
 app.get('/ping', (req, res) => {
-    res.send('pong');
+  res.send('pong');
 });
 
 
 app.use(bodyParser.json());
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://amir-electric-store-tiv1.vercel.app"
-];
+const allowedOrigins = "*";
+//[
+// "http://localhost:5173",
+// "https://amir-electric-store-tiv1.vercel.app"
+//];
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -43,5 +44,5 @@ app.use('/settings', SettingRouter);
 app.use('/contact', contactRoutes);
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
