@@ -12,10 +12,18 @@ const contactRoutes = require('./Routes/contactRoutes');
 require('./Modals/db');
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://aesfrontend-1ggfbns7c-hamzaamir-designs-projects.vercel.app"
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (
+      origin.includes("vercel.app") ||
+      origin === "http://localhost:5173"
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true
 }));
 
