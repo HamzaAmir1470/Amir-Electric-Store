@@ -11,6 +11,15 @@ const contactRoutes = require('./Routes/contactRoutes');
 
 require('./Modals/db');
 
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://aesfrontend-1ggfbns7c-hamzaamir-designs-projects.vercel.app"
+  ],
+  credentials: true
+}));
+
+app.options('*', cors());
 const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
@@ -27,23 +36,6 @@ app.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
 
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : [
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
 app.use('/auth', AuthRouter);
 app.use('/products', ProductRouter);
 app.use('/khata', KhataRouter);
