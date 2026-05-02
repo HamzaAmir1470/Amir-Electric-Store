@@ -21,7 +21,9 @@ import {
     FiList,
     FiChevronDown,
     FiChevronUp,
-    FiAlertTriangle
+    FiAlertTriangle,
+    FiMenu,
+    FiX
 } from "react-icons/fi";
 import { handleError } from "../utils";
 import API_URL from "../config";
@@ -58,6 +60,7 @@ const AdminDashboard = () => {
         averageOrderValue: 0
     });
     const [expandedInvoice, setExpandedInvoice] = useState(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // API_URL is read from Vite env `VITE_API_URL` via src/config.js
 
@@ -353,21 +356,28 @@ const AdminDashboard = () => {
             <html>
                 <head>
                     <title>Daily Sales Report - ${formatDate(selectedDate)}</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
                     <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        h1 { color: #333; font-size: 24px; }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 20px; background: #fff; }
+                        h1 { color: #333; font-size: 24px; margin-bottom: 8px; }
                         .header { text-align: center; margin-bottom: 30px; }
-                        .summary { display: flex; justify-content: space-between; margin-bottom: 20px; }
-                        .summary-card { background: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; flex: 1; margin: 0 5px; }
-                        .summary-card h3 { margin: 0 0 10px 0; font-size: 16px; }
-                        .summary-card p { margin: 0; font-size: 20px; font-weight: bold; }
+                        .summary { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
+                        .summary-card { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
+                        .summary-card h3 { margin: 0 0 10px 0; font-size: 14px; color: #666; }
+                        .summary-card p { margin: 0; font-size: 20px; font-weight: bold; color: #333; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                        th { background-color: #4CAF50; color: white; font-size: 14px; }
+                        th { background-color: #4CAF50; color: white; font-size: 13px; }
                         td { font-size: 12px; }
-                        .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; }
+                        .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #ddd; }
                         @media print {
+                            body { padding: 0; }
                             button { display: none; }
+                        }
+                        @media (max-width: 768px) {
+                            .summary-card p { font-size: 16px; }
+                            th, td { padding: 6px; font-size: 10px; }
                         }
                     </style>
                 </head>
@@ -392,21 +402,16 @@ const AdminDashboard = () => {
                     </div>
                     <table>
                         <thead>
-                            <tr><th>Invoice #</th><th>Products</th><th>Total Items</th><th>Amount</th><th>Status</th><th>Customer</th></tr>
+                            <tr><th>Invoice #</th><th>Products</th><th>Items</th><th>Amount</th><th>Status</th><th>Customer</th></tr>
                         </thead>
                         <tbody>
                             ${dailySales.map(sale => `
                                 <tr>
                                     <td><strong>${sale.invoiceNumber}</strong></td>
-                                    <td>
-                                        ${sale.items.map(item => `${item.product} (${item.qty})`).join(', ')}
-                                    </td>
+                                    <td>${sale.items.map(item => `${item.product} (${item.qty})`).join(', ')}</td>
                                     <td>${sale.totalItems}</td>
                                     <td>${formatCurrency(sale.totalAmount)}</td>
-                                    <td>
-                                        ${sale.paymentStatus === 'partial' ? '⚠ Partial' : '✓ Paid'}
-                                        ${sale.remainingAmount > 0 ? `<br/><small>Due: ${formatCurrency(sale.remainingAmount)}</small>` : ''}
-                                    </td>
+                                    <td>${sale.paymentStatus === 'partial' ? '⚠ Partial' : '✓ Paid'}${sale.remainingAmount > 0 ? `<br/><small>Due: ${formatCurrency(sale.remainingAmount)}</small>` : ''}</td>
                                     <td>${sale.customerName}</td>
                                 </tr>
                             `).join('')}
@@ -450,7 +455,7 @@ const AdminDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -3, transition: { duration: 0.2 } }}
-            className={`${bgColor} rounded-lg p-4 border ${borderColor} shadow-sm hover:shadow transition-all cursor-pointer`}
+            className={`${bgColor} rounded-lg p-3 sm:p-4 border ${borderColor} shadow-sm hover:shadow transition-all cursor-pointer`}
             onClick={() => {
                 if (title === "Invoices") {
                     navigate("/invoices");
@@ -464,17 +469,16 @@ const AdminDashboard = () => {
             }}
         >
             <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-gray-500 text-sm font-medium">{title}</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
+                <div className="flex-1">
+                    <p className="text-gray-500 text-xs sm:text-sm font-medium">{title}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-800 mt-1 truncate">{value}</p>
                 </div>
-                <div className={`${iconColor} text-3xl`}>
+                <div className={`${iconColor} text-xl sm:text-3xl ml-2 flex-shrink-0`}>
                     {icon}
                 </div>
             </div>
         </motion.div>
     );
-
 
     if (loading) {
         return (
@@ -482,7 +486,7 @@ const AdminDashboard = () => {
                 <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-10 h-10 border-3 border-blue-400 border-t-transparent rounded-full"
+                    className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-blue-400 border-t-transparent rounded-full"
                 />
             </div>
         );
@@ -490,14 +494,14 @@ const AdminDashboard = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg shadow-lg p-6 max-w-md text-center">
-                    <FiAlertCircle className="text-red-500 text-5xl mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Loading Dashboard</h3>
-                    <p className="text-gray-600 mb-4">{error}</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 max-w-md text-center">
+                    <FiAlertCircle className="text-red-500 text-4xl sm:text-5xl mx-auto mb-4" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">Error Loading Dashboard</h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={fetchDashboardData}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                        className="px-3 py-2 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm sm:text-base"
                     >
                         Try Again
                     </button>
@@ -508,34 +512,34 @@ const AdminDashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 py-5">
-                {/* Header with Logout Button */}
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5">
+                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-6"
+                    className="mb-4 sm:mb-6"
                 >
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-                            <p className="text-gray-500 text-sm mt-1">Welcome back! Here's your business overview</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Dashboard</h1>
+                            <p className="text-gray-500 text-xs sm:text-sm mt-1">Welcome back! Here's your business overview</p>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                             <motion.button
-                                whileHover={{ scale: 1.05, rotate: 180 }}
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={fetchDashboardData}
-                                className="p-2 bg-white rounded-lg shadow-sm hover:shadow text-gray-600 transition-all"
+                                className="p-2 bg-white rounded-lg shadow-sm hover:shadow text-gray-600 transition-all flex-1 sm:flex-none"
                                 title="Refresh"
                             >
-                                <FiRefreshCw size={18} />
+                                <FiRefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
                             </motion.button>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Stats Grid - Row 1 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {/* Stats Grid - Row 1 - Mobile responsive grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-3 sm:mb-4">
                     <StatCard
                         title="Products"
                         value={stats.products}
@@ -571,7 +575,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Stats Grid - Row 2 */}
-                <div className="grid grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
                     <StatCard
                         title="Low Stock"
                         value={stats.lowStock}
@@ -606,91 +610,93 @@ const AdminDashboard = () => {
                     />
                 </div>
 
-                {/* Daily Sales Panel */}
+                {/* Daily Sales Panel - Mobile Responsive */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg mb-8 overflow-hidden"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg mb-6 sm:mb-8 overflow-hidden"
                 >
-                    <div className="px-6 py-5">
-                        <div className="flex justify-between items-center mb-5">
-                            <div className="flex items-center gap-3">
-                                <FiCalendar className="text-white text-2xl" />
-                                <h2 className="text-white font-bold text-2xl">Daily Sales Report</h2>
+                    <div className="px-3 sm:px-6 py-3 sm:py-5">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-5">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <FiCalendar className="text-white text-xl sm:text-2xl" />
+                                <h2 className="text-white font-bold text-lg sm:text-2xl">Daily Sales</h2>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={handlePrintDailySales}
-                                    className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition text-sm font-medium flex items-center gap-2"
+                                    className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition text-xs sm:text-sm font-medium flex items-center justify-center gap-1 sm:gap-2"
                                 >
-                                    <FiPrinter size={16} />
-                                    Print Report
+                                    <FiPrinter size={14} />
+                                    <span>Print</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Date Navigation */}
-                        <div className="flex items-center justify-between bg-white/10 rounded-lg p-4 mb-5">
+                        {/* Date Navigation - Mobile Optimized */}
+                        <div className="flex items-center justify-between bg-white/10 rounded-lg p-2 sm:p-4 mb-3 sm:mb-5">
                             <button
                                 onClick={() => changeDate(-1)}
-                                className="p-2 hover:bg-white/20 rounded-lg transition text-white"
+                                className="p-1.5 sm:p-2 hover:bg-white/20 rounded-lg transition text-white"
                             >
-                                <FiChevronLeft size={24} />
+                                <FiChevronLeft size={20} className="sm:w-6 sm:h-6" />
                             </button>
-                            <div className="text-center">
-                                <p className="text-white text-lg font-semibold">{formatDate(selectedDate)}</p>
+                            <div className="text-center px-2">
+                                <p className="text-white text-xs sm:text-lg font-semibold leading-tight">
+                                    {formatDate(selectedDate).split(',')[0]}
+                                </p>
                                 <button
                                     onClick={setToday}
-                                    className="text-white/80 text-sm hover:text-white mt-1"
+                                    className="text-white/80 text-[10px] sm:text-sm hover:text-white mt-0.5 sm:mt-1"
                                 >
-                                    Go to Today
+                                    Today
                                 </button>
                             </div>
                             <button
                                 onClick={() => changeDate(1)}
-                                className="p-2 hover:bg-white/20 rounded-lg transition text-white"
+                                className="p-1.5 sm:p-2 hover:bg-white/20 rounded-lg transition text-white"
                                 disabled={selectedDate >= new Date()}
                             >
-                                <FiChevronRight size={24} />
+                                <FiChevronRight size={20} className="sm:w-6 sm:h-6" />
                             </button>
                         </div>
 
-                        {/* Daily Summary Cards */}
-                        <div className="grid grid-cols-3 gap-4 mb-5">
-                            <div className="bg-white/20 rounded-lg p-4 text-center">
-                                <p className="text-white/90 text-sm mb-1">Total Sales</p>
-                                <p className="text-white font-bold text-2xl">{formatCurrency(dailyTotal)}</p>
+                        {/* Daily Summary Cards - Mobile Responsive Grid */}
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-4 mb-3 sm:mb-5">
+                            <div className="bg-white/20 rounded-lg p-2 sm:p-4 text-center">
+                                <p className="text-white/90 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Sales</p>
+                                <p className="text-white font-bold text-xs sm:text-2xl truncate">{formatCurrency(dailyTotal)}</p>
                             </div>
-                            <div className="bg-white/20 rounded-lg p-4 text-center">
-                                <p className="text-white/90 text-sm mb-1">Total Invoices</p>
-                                <p className="text-white font-bold text-2xl">{dailyStats.totalInvoices}</p>
+                            <div className="bg-white/20 rounded-lg p-2 sm:p-4 text-center">
+                                <p className="text-white/90 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Invoices</p>
+                                <p className="text-white font-bold text-sm sm:text-2xl">{dailyStats.totalInvoices}</p>
                             </div>
-                            <div className="bg-white/20 rounded-lg p-4 text-center">
-                                <p className="text-white/90 text-sm mb-1">Items Sold</p>
-                                <p className="text-white font-bold text-2xl">{dailyStats.totalItems}</p>
+                            <div className="bg-white/20 rounded-lg p-2 sm:p-4 text-center">
+                                <p className="text-white/90 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Items</p>
+                                <p className="text-white font-bold text-sm sm:text-2xl">{dailyStats.totalItems}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Sales Items Table - Grouped by Invoice */}
-                    <div className="bg-white">
-                        <div className="max-h-[500px] overflow-auto">
+                    {/* Sales Items Table - Mobile Responsive with Horizontal Scroll */}
+                    <div className="bg-white overflow-x-auto">
+                        <div className="min-w-[640px] md:min-w-full">
                             {dailySales.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <FiShoppingCart className="mx-auto text-gray-300 text-5xl mb-4" />
-                                    <p className="text-gray-400 text-base">No sales recorded for this date</p>
+                                <div className="text-center py-8 sm:py-12 px-4">
+                                    <FiShoppingCart className="mx-auto text-gray-300 text-3xl sm:text-5xl mb-3 sm:mb-4" />
+                                    <p className="text-gray-400 text-sm sm:text-base">No sales recorded for this date</p>
                                 </div>
                             ) : (
                                 <table className="w-full">
-                                    <thead className="bg-gray-50 sticky top-0">
+                                    <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Invoice #</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Products</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Total Items</th>
-                                            <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Total Amount</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Status</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Customer</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-600">Actions</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-600">Invoice</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-600">Products</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-600">Items</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-gray-600">Amount</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-600">Status</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Customer</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-600">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -703,73 +709,73 @@ const AdminDashboard = () => {
                                                         transition={{ delay: idx * 0.05 }}
                                                         className="hover:bg-gray-50"
                                                     >
-                                                        <td className="px-6 py-3 font-mono text-sm font-semibold text-gray-700">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 font-mono text-[11px] sm:text-sm font-semibold text-gray-700">
                                                             {sale.invoiceNumber}
                                                         </td>
-                                                        <td className="px-6 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm text-gray-800">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3">
+                                                            <div className="flex items-center gap-1 sm:gap-2">
+                                                                <span className="text-[11px] sm:text-sm text-gray-800">
                                                                     {sale.items.length > 1
-                                                                        ? `${sale.items[0].product} + ${sale.items.length - 1} more item(s)`
+                                                                        ? `${sale.items[0].product.substring(0, 15)} +${sale.items.length - 1}`
                                                                         : sale.items[0].product}
                                                                 </span>
                                                                 {sale.items.length > 1 && (
                                                                     <button
                                                                         onClick={() => toggleExpandedInvoice(sale.invoiceId)}
-                                                                        className="text-blue-600 hover:text-blue-800 transition"
-                                                                        title="View all products"
+                                                                        className="text-blue-600 hover:text-blue-800 transition flex-shrink-0"
                                                                     >
                                                                         {expandedInvoice === sale.invoiceId ? (
-                                                                            <FiChevronUp size={16} />
+                                                                            <FiChevronUp size={12} className="sm:w-4 sm:h-4" />
                                                                         ) : (
-                                                                            <FiChevronDown size={16} />
+                                                                            <FiChevronDown size={12} className="sm:w-4 sm:h-4" />
                                                                         )}
                                                                     </button>
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-3 text-center text-sm text-gray-700">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 text-center text-[11px] sm:text-sm text-gray-700">
                                                             {sale.totalItems}
                                                         </td>
-                                                        <td className="px-6 py-3 text-right font-semibold text-sm text-gray-800">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 text-right font-semibold text-[11px] sm:text-sm text-gray-800">
                                                             {formatCurrency(sale.totalAmount)}
                                                         </td>
-                                                        <td className="px-6 py-3 text-center">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 text-center">
                                                             {sale.paymentStatus === "partial" ? (
-                                                                <div className="flex flex-col items-center gap-1">
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                                                        <FiAlertTriangle size={10} />
-                                                                        Partial
+                                                                <div className="flex flex-col items-center gap-0.5">
+                                                                    <span className="inline-flex items-center gap-0.5 px-1 sm:px-2 py-0.5 sm:py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] sm:text-xs font-medium">
+                                                                        <FiAlertTriangle size={8} />
+                                                                        <span className="hidden sm:inline">Partial</span>
+                                                                        <span className="sm:hidden">Part</span>
                                                                     </span>
-                                                                    <span className="text-xs text-gray-500">
+                                                                    <span className="text-[8px] sm:text-xs text-gray-500">
                                                                         Due: {formatCurrency(sale.remainingAmount)}
                                                                     </span>
                                                                 </div>
                                                             ) : (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                                                    <FiCheckCircle size={10} />
-                                                                    Paid
+                                                                <span className="inline-flex items-center gap-0.5 px-1 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 rounded-full text-[9px] sm:text-xs font-medium">
+                                                                    <FiCheckCircle size={8} />
+                                                                    <span className="hidden sm:inline">Paid</span>
+                                                                    <span className="sm:hidden">✓</span>
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="px-6 py-3">
-                                                            <div className="text-sm font-medium text-gray-800">{sale.customerName}</div>
-                                                            {sale.customerPhone && (
-                                                                <div className="text-xs text-gray-500">{sale.customerPhone}</div>
-                                                            )}
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 hidden sm:table-cell">
+                                                            <div className="text-xs sm:text-sm font-medium text-gray-800 truncate max-w-[120px]">
+                                                                {sale.customerName}
+                                                            </div>
                                                         </td>
-                                                        <td className="px-6 py-3 text-center">
+                                                        <td className="px-2 sm:px-6 py-2 sm:py-3 text-center">
                                                             <button
                                                                 onClick={() => handleViewInvoice(sale.invoiceId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
+                                                                className="inline-flex items-center gap-0.5 px-1.5 py-1 sm:px-3 sm:py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-[10px] sm:text-sm font-medium"
                                                             >
-                                                                <FiEye size={14} />
-                                                                View Details
+                                                                <FiEye size={10} className="sm:w-3.5 sm:h-3.5" />
+                                                                <span className="hidden sm:inline">View</span>
                                                             </button>
                                                         </td>
                                                     </motion.tr>
 
-                                                    {/* Expanded Products Row */}
+                                                    {/* Expanded Products Row - Mobile Optimized */}
                                                     <AnimatePresence>
                                                         {expandedInvoice === sale.invoiceId && (
                                                             <motion.tr
@@ -779,19 +785,19 @@ const AdminDashboard = () => {
                                                                 transition={{ duration: 0.3 }}
                                                                 className="bg-gray-50"
                                                             >
-                                                                <td colSpan="7" className="px-6 py-4">
+                                                                <td colSpan="7" className="px-2 sm:px-6 py-2 sm:py-4">
                                                                     <div className="space-y-2">
-                                                                        <p className="font-semibold text-gray-700 text-sm mb-2">All Products:</p>
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                        <p className="font-semibold text-gray-700 text-xs sm:text-sm mb-1 sm:mb-2">All Products:</p>
+                                                                        <div className="grid grid-cols-1 gap-2">
                                                                             {sale.items.map((item, itemIdx) => (
                                                                                 <div key={itemIdx} className="flex justify-between items-center p-2 bg-white rounded-lg border border-gray-200">
                                                                                     <div className="flex-1">
-                                                                                        <p className="font-medium text-gray-800 text-sm">{item.product}</p>
-                                                                                        <p className="text-xs text-gray-500">Price: {formatCurrency(item.price)}</p>
+                                                                                        <p className="font-medium text-gray-800 text-xs sm:text-sm">{item.product}</p>
+                                                                                        <p className="text-[10px] sm:text-xs text-gray-500">Price: {formatCurrency(item.price)}</p>
                                                                                     </div>
-                                                                                    <div className="text-right">
-                                                                                        <p className="text-sm text-gray-700">Qty: {item.qty}</p>
-                                                                                        <p className="font-semibold text-sm text-blue-600">{formatCurrency(item.total)}</p>
+                                                                                    <div className="text-right ml-2">
+                                                                                        <p className="text-xs sm:text-sm text-gray-700">Qty: {item.qty}</p>
+                                                                                        <p className="font-semibold text-[10px] sm:text-xs text-blue-600">{formatCurrency(item.total)}</p>
                                                                                     </div>
                                                                                 </div>
                                                                             ))}
@@ -805,15 +811,15 @@ const AdminDashboard = () => {
                                             ))}
                                         </AnimatePresence>
                                     </tbody>
-                                    <tfoot className="bg-gray-50 sticky bottom-0">
+                                    <tfoot className="bg-gray-50">
                                         <tr className="border-t-2 border-gray-200">
-                                            <td colSpan="3" className="px-6 py-4 text-right font-bold text-base text-gray-800">
-                                                Grand Total:
+                                            <td colSpan="3" className="px-2 sm:px-6 py-2 sm:py-4 text-right font-bold text-xs sm:text-base text-gray-800">
+                                                Total:
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-lg text-blue-600">
+                                            <td className="px-2 sm:px-6 py-2 sm:py-4 text-right font-bold text-sm sm:text-lg text-blue-600">
                                                 {formatCurrency(dailyTotal)}
                                             </td>
-                                            <td colSpan="3"></td>
+                                            <td colSpan="3" className="hidden sm:table-cell"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -822,8 +828,8 @@ const AdminDashboard = () => {
                     </div>
                 </motion.div>
 
-                {/* Middle Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Middle Section - Responsive Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {/* Recent Activity */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -831,29 +837,29 @@ const AdminDashboard = () => {
                         transition={{ delay: 0.2 }}
                         className="bg-white rounded-lg shadow-sm overflow-hidden"
                     >
-                        <div className="bg-blue-500 px-6 py-3">
-                            <h3 className="text-white font-semibold flex items-center gap-2 text-base">
-                                <FiClock size={18} />
+                        <div className="bg-blue-500 px-4 sm:px-6 py-2 sm:py-3">
+                            <h3 className="text-white font-semibold flex items-center gap-2 text-sm sm:text-base">
+                                <FiClock size={16} className="sm:w-[18px] sm:h-[18px]" />
                                 Recent Activity
                             </h3>
                         </div>
-                        <div className="p-4 max-h-[400px] overflow-y-auto">
+                        <div className="p-3 sm:p-4 max-h-[400px] overflow-y-auto">
                             {recentActivities.length === 0 ? (
-                                <p className="text-gray-400 text-center py-8">No recent activity</p>
+                                <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">No recent activity</p>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2 sm:space-y-3">
                                     {recentActivities.map((activity, idx) => (
                                         <motion.div
                                             key={activity.id}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded transition-all"
+                                            className="flex items-start gap-2 sm:gap-3 p-1.5 sm:p-2 hover:bg-gray-50 rounded transition-all"
                                         >
-                                            <div className="w-2 h-2 rounded-full bg-blue-400 mt-2"></div>
+                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 mt-1.5 sm:mt-2"></div>
                                             <div className="flex-1">
-                                                <p className="text-gray-700 text-sm">{activity.message}</p>
-                                                <p className="text-xs text-gray-400 mt-1">{getTimeAgo(activity.time)}</p>
+                                                <p className="text-gray-700 text-xs sm:text-sm">{activity.message}</p>
+                                                <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">{getTimeAgo(activity.time)}</p>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -869,20 +875,20 @@ const AdminDashboard = () => {
                         transition={{ delay: 0.3 }}
                         className="bg-white rounded-lg shadow-sm overflow-hidden"
                     >
-                        <div className="bg-red-500 px-6 py-3">
-                            <h3 className="text-white font-semibold flex items-center gap-2 text-base">
-                                <FiAlertCircle size={18} />
+                        <div className="bg-red-500 px-4 sm:px-6 py-2 sm:py-3">
+                            <h3 className="text-white font-semibold flex items-center gap-2 text-sm sm:text-base">
+                                <FiAlertCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
                                 Low Stock Alerts
                             </h3>
                         </div>
-                        <div className="p-4 max-h-[400px] overflow-y-auto">
+                        <div className="p-3 sm:p-4 max-h-[400px] overflow-y-auto">
                             {lowStockProducts.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <FiCheckCircle size={48} className="text-green-400 mx-auto mb-3" />
-                                    <p className="text-gray-500">All products have sufficient stock!</p>
+                                <div className="text-center py-6 sm:py-8">
+                                    <FiCheckCircle size={32} className="sm:w-12 sm:h-12 text-green-400 mx-auto mb-2 sm:mb-3" />
+                                    <p className="text-gray-500 text-sm">All products have sufficient stock!</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2 sm:space-y-3">
                                     {lowStockProducts.map((product, idx) => (
                                         <motion.div
                                             key={product._id}
@@ -890,13 +896,13 @@ const AdminDashboard = () => {
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.1 }}
                                             whileHover={{ scale: 1.01 }}
-                                            className="flex items-center justify-between p-3 bg-yellow-50 rounded border-l-4 border-yellow-400"
+                                            className="flex items-center justify-between p-2 sm:p-3 bg-yellow-50 rounded border-l-4 border-yellow-400"
                                         >
-                                            <div>
-                                                <p className="font-semibold text-gray-800 text-sm">{product.name}</p>
-                                                <p className="text-sm text-gray-600 mt-1">Stock: {product.quantity} units</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate">{product.name}</p>
+                                                <p className="text-[11px] sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Stock: {product.quantity} units</p>
                                             </div>
-                                            <div className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm font-medium">
+                                            <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-red-100 text-red-600 rounded text-[10px] sm:text-sm font-medium ml-2 flex-shrink-0">
                                                 LOW
                                             </div>
                                         </motion.div>
@@ -907,136 +913,139 @@ const AdminDashboard = () => {
                     </motion.div>
                 </div>
 
-                {/* Recent Invoices - Show only 3 with View All button */}
+                {/* Recent Invoices - Mobile Responsive */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="bg-white rounded-lg shadow-sm overflow-hidden mb-8"
+                    className="bg-white rounded-lg shadow-sm overflow-hidden mb-6 sm:mb-8"
                 >
-                    <div className="bg-purple-500 px-6 py-3 flex justify-between items-center">
-                        <h3 className="text-white font-semibold flex items-center gap-2 text-base">
-                            <FiFileText size={18} />
+                    <div className="bg-purple-500 px-4 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 className="text-white font-semibold flex items-center gap-2 text-sm sm:text-base">
+                            <FiFileText size={16} className="sm:w-[18px] sm:h-[18px]" />
                             Recent Invoices
                         </h3>
                         {stats.invoices > 3 && (
                             <button
                                 onClick={showAllInvoices ? handleShowLessInvoices : handleViewAllInvoices}
-                                className="flex items-center gap-2 px-3 py-1 bg-white/20 text-white rounded-lg hover:bg-white/30 transition text-sm"
+                                className="flex items-center gap-1 sm:gap-2 px-2 py-0.5 sm:px-3 sm:py-1 bg-white/20 text-white rounded-lg hover:bg-white/30 transition text-[10px] sm:text-sm"
                             >
-                                <FiList size={14} />
+                                <FiList size={12} className="sm:w-3.5 sm:h-3.5" />
                                 {showAllInvoices ? "Show Less" : `View All (${stats.invoices})`}
                             </button>
                         )}
                     </div>
                     <div className="overflow-x-auto">
-                        {recentInvoices.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-400">No invoices generated yet</p>
-                            </div>
-                        ) : (
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Invoice #</th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Customer</th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Date</th>
-                                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-600">Amount</th>
-                                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-600">Status</th>
-                                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-600">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {recentInvoices.slice(0, showAllInvoices ? recentInvoices.length : 3).map((invoice, idx) => {
-                                        const isPartial = invoice.payment?.paymentStatus === "partial" || invoice.payment?.remainingAmount > 0;
-                                        return (
-                                            <motion.tr
-                                                key={invoice._id}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                transition={{ delay: idx * 0.05 }}
-                                                whileHover={{ backgroundColor: '#F9FAFB' }}
-                                                className="cursor-pointer"
-                                            >
-                                                <td className="px-6 py-3 font-mono text-sm font-semibold text-gray-900">
-                                                    {invoice.invoiceNumber}
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <div className="text-sm font-medium text-gray-900">{invoice.customer.name}</div>
-                                                    {invoice.customer.phone && (
-                                                        <div className="text-xs text-gray-500">{invoice.customer.phone}</div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-3 text-sm text-gray-500">
-                                                    {new Date(invoice.createdAt).toLocaleDateString('en-PK', {
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </td>
-                                                <td className="px-6 py-3 text-right font-semibold text-gray-900 text-sm">
-                                                    {formatCurrency(invoice.grandTotal)}
-                                                </td>
-                                                <td className="px-6 py-3 text-center">
-                                                    {isPartial ? (
-                                                        <div className="flex flex-col items-center gap-1">
-                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                                                <FiAlertTriangle size={10} />
-                                                                Partial
-                                                            </span>
-                                                            <span className="text-xs text-gray-500">
-                                                                Due: {formatCurrency(invoice.payment?.remainingAmount || 0)}
-                                                            </span>
+                        <div className="min-w-[640px] md:min-w-full">
+                            {recentInvoices.length === 0 ? (
+                                <div className="text-center py-6 sm:py-8">
+                                    <p className="text-gray-400 text-sm">No invoices generated yet</p>
+                                </div>
+                            ) : (
+                                <table className="w-full">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Invoice #</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Customer</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Date</th>
+                                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-600">Amount</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-600">Status</th>
+                                            <th className="px-2 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-600">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {recentInvoices.slice(0, showAllInvoices ? recentInvoices.length : 3).map((invoice, idx) => {
+                                            const isPartial = invoice.payment?.paymentStatus === "partial" || invoice.payment?.remainingAmount > 0;
+                                            return (
+                                                <motion.tr
+                                                    key={invoice._id}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: idx * 0.05 }}
+                                                    whileHover={{ backgroundColor: '#F9FAFB' }}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3 font-mono text-[10px] sm:text-sm font-semibold text-gray-900">
+                                                        {invoice.invoiceNumber}
+                                                    </td>
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3">
+                                                        <div className="text-[10px] sm:text-sm font-medium text-gray-900 truncate max-w-[100px] sm:max-w-none">
+                                                            {invoice.customer.name}
                                                         </div>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                                            <FiCheckCircle size={10} />
-                                                            Paid
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-3 text-center">
-                                                    <button
-                                                        onClick={() => handleViewInvoice(invoice._id)}
-                                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
-                                                    >
-                                                        <FiEye size={14} />
-                                                        View Details
-                                                    </button>
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        )}
+                                                    </td>
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-sm text-gray-500 hidden sm:table-cell">
+                                                        {new Date(invoice.createdAt).toLocaleDateString('en-PK', {
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </td>
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3 text-right font-semibold text-gray-900 text-[10px] sm:text-sm">
+                                                        {formatCurrency(invoice.grandTotal)}
+                                                    </td>
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3 text-center">
+                                                        {isPartial ? (
+                                                            <div className="flex flex-col items-center gap-0.5">
+                                                                <span className="inline-flex items-center gap-0.5 px-1 sm:px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[8px] sm:text-xs font-medium">
+                                                                    <FiAlertTriangle size={8} />
+                                                                    <span className="hidden sm:inline">Partial</span>
+                                                                    <span className="sm:hidden">Part</span>
+                                                                </span>
+                                                                <span className="text-[7px] sm:text-xs text-gray-500 hidden sm:inline">
+                                                                    Due: {formatCurrency(invoice.payment?.remainingAmount || 0)}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-0.5 px-1 sm:px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[8px] sm:text-xs font-medium">
+                                                                <FiCheckCircle size={8} />
+                                                                <span className="hidden sm:inline">Paid</span>
+                                                                <span className="sm:hidden">✓</span>
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-2 sm:px-6 py-2 sm:py-3 text-center">
+                                                        <button
+                                                            onClick={() => handleViewInvoice(invoice._id)}
+                                                            className="inline-flex items-center gap-0.5 px-1.5 py-1 sm:px-3 sm:py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-[9px] sm:text-sm font-medium"
+                                                        >
+                                                            <FiEye size={10} className="sm:w-3.5 sm:h-3.5" />
+                                                            <span className="hidden sm:inline">View</span>
+                                                        </button>
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
 
-                {/* Quick Stats Footer */}
+                {/* Quick Stats Footer - Mobile Responsive Grid */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="grid grid-cols-3 gap-4"
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
                 >
-                    <div className="bg-teal-50 rounded-lg p-4 text-center border border-teal-100">
-                        <FiShoppingCart className="mx-auto mb-2 text-teal-500 text-2xl" />
-                        <p className="text-gray-600 text-sm mb-1">Avg Order Value</p>
-                        <p className="font-bold text-gray-800 text-xl">{formatCurrency(dailyStats.averageOrderValue)}</p>
+                    <div className="bg-teal-50 rounded-lg p-3 sm:p-4 text-center border border-teal-100">
+                        <FiShoppingCart className="mx-auto mb-1 sm:mb-2 text-teal-500 text-xl sm:text-2xl" />
+                        <p className="text-gray-600 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Avg Order Value</p>
+                        <p className="font-bold text-gray-800 text-sm sm:text-xl">{formatCurrency(dailyStats.averageOrderValue)}</p>
                     </div>
-                    <div className="bg-emerald-50 rounded-lg p-4 text-center border border-emerald-100">
-                        <FiAward className="mx-auto mb-2 text-emerald-500 text-2xl" />
-                        <p className="text-gray-600 text-sm mb-1">Completion Rate</p>
-                        <p className="font-bold text-gray-800 text-xl">98%</p>
+                    <div className="bg-emerald-50 rounded-lg p-3 sm:p-4 text-center border border-emerald-100">
+                        <FiAward className="mx-auto mb-1 sm:mb-2 text-emerald-500 text-xl sm:text-2xl" />
+                        <p className="text-gray-600 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Completion Rate</p>
+                        <p className="font-bold text-gray-800 text-sm sm:text-xl">98%</p>
                     </div>
-                    <div className="bg-rose-50 rounded-lg p-4 text-center border border-rose-100">
-                        <FiTrendingUp className="mx-auto mb-2 text-rose-500 text-2xl" />
-                        <p className="text-gray-600 text-sm mb-1">Growth</p>
-                        <p className="font-bold text-gray-800 text-xl">+12%</p>
+                    <div className="bg-rose-50 rounded-lg p-3 sm:p-4 text-center border border-rose-100">
+                        <FiTrendingUp className="mx-auto mb-1 sm:mb-2 text-rose-500 text-xl sm:text-2xl" />
+                        <p className="text-gray-600 text-[10px] sm:text-sm mb-0.5 sm:mb-1">Growth</p>
+                        <p className="font-bold text-gray-800 text-sm sm:text-xl">+12%</p>
                     </div>
                 </motion.div>
             </div>
+            <ToastContainer />
         </div>
     );
 };
