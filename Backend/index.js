@@ -19,7 +19,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.options('*', cors());
+app.options(/.*/, cors());
 const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
